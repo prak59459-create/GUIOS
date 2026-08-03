@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark" data-mode="auto">
+<head>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="logo.png" type="image/png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0d0a">
+<meta name="color-scheme" content="dark light">
+<title>GUIOS</title>
+<style>
+/* ============================================================
+   GUIOS — design tokens
+   warm graphite base / single brass-amber accent (terminal
+   phosphor + instrument-panel heritage) / system UI type for
+   chrome + monospace "readout" type for the technical moments.
+   ============================================================ */
+:root{
+  --bg-0:#0f0d0a; --bg-1:#1b1712; --bg-2:#26211a; --bg-3:#332c22;
+  --accent:#e2a03f; --accent-strong:#f2b455; --accent-ink:#1a1206;
+  --text-0:#f4ede0; --text-1:#b3a690; --text-2:#786c58;
+  --danger:#e2584a; --danger-ink:#2a0f0b; --success:#5cb87a; --warning:#e2a03f;
+  --border:rgba(244,237,224,.09); --border-strong:rgba(244,237,224,.16);
+  --glass:rgba(24,20,15,.72);
+  --shadow-sm:0 2px 8px rgba(8,6,4,.35);
+  --shadow-md:0 12px 32px rgba(8,6,4,.45);
+  --shadow-lg:0 28px 70px rgba(8,6,4,.6);
+  --radius-xs:6px; --radius-sm:10px; --radius-md:16px; --radius-lg:22px; --radius-full:999px;
+  --font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+  --font-mono:"SF Mono","SFMono-Regular",Menlo,Consolas,"Roboto Mono","Noto Sans Mono",monospace;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --dur-fast:.15s; --dur-base:.25s; --dur-slow:.45s;
+  --topbar-h:34px; --dock-size:60px;
+  --z-desktop:10; --z-win:100; --z-dock:8000; --z-topbar:8500; --z-ctx:9000; --z-toast:9500; --z-modal:9800; --z-drag:9900; --z-boot:99999;
+}
+html[data-theme="light"]{
+  --bg-0:#f2ede2; --bg-1:#fbf8f1; --bg-2:#efe8d8; --bg-3:#e5dcc7;
+  --accent:#b6791e; --accent-strong:#c98923; --accent-ink:#fffaf0;
+  --text-0:#241f16; --text-1:#5c5340; --text-2:#8c8268;
+  --danger:#c23b30; --danger-ink:#fff5f4; --success:#2f8a53; --warning:#b6791e;
+  --border:rgba(36,31,22,.1); --border-strong:rgba(36,31,22,.2);
+  --glass:rgba(251,248,241,.78);
+  --shadow-sm:0 2px 8px rgba(36,31,22,.08);
+  --shadow-md:0 12px 28px rgba(36,31,22,.12);
+  --shadow-lg:0 28px 60px rgba(36,31,22,.18);
+}
+@media (prefers-reduced-motion:reduce){ :root{ --dur-fast:.001s; --dur-base:.001s; --dur-slow:.001s; } }
+html[data-reduce-motion="1"]{ --dur-fast:.001s !important; --dur-base:.001s !important; --dur-slow:.001s !important; }
+
+*,*::before,*::after{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ width:100%; height:100%; overscroll-behavior:none; }
+body{
+  overflow:hidden; background:var(--bg-0); color:var(--text-0);
+  font-family:var(--font-ui); font-size:14px; -webkit-font-smoothing:antialiased;
+}
+button,input,textarea{ font-family:inherit; color:inherit; }
+button{ background:none; border:none; cursor:pointer; -webkit-appearance:none; }
+img,svg{ display:block; max-width:100%; }
+::selection{ background:var(--accent); color:var(--accent-ink); }
+.hidden{ display:none !important; }
+.visually-hidden{ position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
+a{ color:var(--accent); }
+
+/* focus ring — always visible for keyboard users */
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+/* ---------- boot screen : terminal-log signature moment ---------- */
+#boot-screen{
+  position:fixed; inset:0; z-index:var(--z-boot); background:var(--bg-0);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition:opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+  padding:24px;
+}
+#boot-screen.done{ opacity:0; transform:scale(1.04); pointer-events:none; }
+.boot-mark{
+  width:64px; height:64px; border-radius:var(--radius-md);
+  background:linear-gradient(160deg,var(--bg-2),var(--bg-1));
+  border:1px solid var(--border-strong);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-weight:700; font-size:20px; color:var(--accent);
+  box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06);
+  margin-bottom:18px; animation:bootBreathe 2.2s ease-in-out infinite;
+}
+@keyframes bootBreathe{ 0%,100%{ box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 rgba(226,160,63,0);} 50%{ box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06), 0 0 26px rgba(226,160,63,.35);} }
+.boot-word{ font-family:var(--font-mono); font-size:13px; letter-spacing:.42em; text-transform:uppercase; color:var(--text-1); margin-bottom:22px; }
+.boot-log{
+  width:min(360px,86vw); height:150px; overflow:hidden; font-family:var(--font-mono); font-size:11px;
+  line-height:1.9; color:var(--text-2);
+}
+.boot-log div{ opacity:0; transform:translateY(4px); animation:bootLine .35s var(--ease) forwards; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@keyframes bootLine{ to{ opacity:1; transform:translateY(0); } }
+.boot-log .ok{ color:var(--success); }
+.boot-log .tag{ color:var(--accent); }
+.boot-err{ margin-top:14px; font-size:12px; color:var(--danger); max-width:300px; text-align:center; line-height:1.6; display:none; }
+.boot-skip{ margin-top:14px; padding:9px 22px; background:var(--bg-1); border:1px solid var(--border-strong); color:var(--text-0); border-radius:var(--radius-full); font-size:12px; display:none; }
+
+/* ---------- lock screen ---------- */
+#lock-screen{
+  position:fixed; inset:0; z-index:99000; background:var(--bg-0);
+  background-image:radial-gradient(circle at 50% 18%, var(--bg-2), var(--bg-0) 70%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition:opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease); cursor:pointer;
+}
+#lock-screen.hidden-locked{ opacity:0; transform:scale(1.06); pointer-events:none; }
+.lock-time{ font-family:var(--font-mono); font-size:58px; font-weight:600; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+.lock-date{ font-size:14px; color:var(--text-1); margin-top:6px; margin-bottom:30px; }
+.lock-hint{ font-size:12px; color:var(--text-2); display:flex; align-items:center; gap:6px; }
+
+/* ---------- shell / topbar ---------- */
+#shell{ position:fixed; inset:0; display:none; flex-direction:column; }
+#shell.active{ display:flex; }
+#topbar{
+  height:calc(var(--topbar-h) + var(--safe-t)); padding-top:var(--safe-t);
+  padding-left:max(14px,var(--safe-l)); padding-right:max(14px,var(--safe-r));
+  display:flex; align-items:center; gap:10px; flex-shrink:0;
+  background:var(--glass); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border); z-index:var(--z-topbar); user-select:none;
+}
+.tb-brand{ font-family:var(--font-mono); font-weight:700; font-size:12px; letter-spacing:.14em; color:var(--text-1); display:flex; align-items:center; gap:6px; }
+.tb-brand b{ color:var(--accent); }
+#topbar-appname{ font-size:12.5px; font-weight:600; color:var(--text-0); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tb-sep{ width:1px; height:14px; background:var(--border-strong); }
+.tb-spacer{ flex:1; }
+.tb-btn{ width:26px; height:26px; border-radius:var(--radius-xs); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-1); transition:background var(--dur-fast); }
+.tb-btn:hover{ background:var(--bg-2); color:var(--text-0); }
+#topbar-clock{ font-family:var(--font-mono); font-size:12px; color:var(--text-1); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+/* ---------- desktop / icon grid ---------- */
+#desktop-wrap{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; }
+#desktop-toolbar{ padding:10px max(14px,var(--safe-l)) 4px; flex-shrink:0; }
+#desktop-search{
+  width:100%; max-width:320px; background:var(--bg-1); border:1px solid var(--border);
+  padding:8px 12px; border-radius:var(--radius-full); font-size:13px; color:var(--text-0); outline:none;
+}
+#desktop-search::placeholder{ color:var(--text-2); }
+#desktop-search:focus{ border-color:var(--accent); }
+#desktop-canvas{ position:relative; flex:1; min-height:0; overflow:hidden; }
+#desktop{
+  position:absolute; inset:0; overflow-y:auto; overflow-x:hidden;
+  padding:10px max(14px,var(--safe-l)) calc(var(--dock-size) + 46px) max(14px,var(--safe-l));
+  display:grid; grid-template-columns:repeat(auto-fill,76px); grid-auto-rows:92px;
+  gap:6px 4px; align-content:start; justify-content:start;
+}
+.icon-tile{
+  display:flex; flex-direction:column; align-items:center; gap:6px; padding:6px 4px;
+  border-radius:var(--radius-md); cursor:pointer; transition:background var(--dur-fast); user-select:none;
+  -webkit-user-drag:element;
+}
+.icon-tile:hover{ background:var(--bg-2); }
+.icon-tile:active .icon-glyph{ transform:scale(.93); }
+.icon-tile.dragging{ opacity:.35; }
+.icon-glyph{
+  width:52px; height:52px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center;
+  font-size:24px; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -10px 14px rgba(0,0,0,.12);
+  border:1px solid rgba(0,0,0,.14); transition:transform var(--dur-fast) var(--ease); position:relative;
+}
+.icon-glyph.system{ background:linear-gradient(160deg,var(--bg-3),var(--bg-2)); border-color:var(--border-strong); color:var(--accent); }
+.icon-label{ font-size:10.5px; color:var(--text-0); text-align:center; max-width:74px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+.icon-badge{ position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); }
+.desktop-empty{ grid-column:1/-1; padding:40px 10px; text-align:center; color:var(--text-2); font-size:12.5px; line-height:1.8; }
+
+/* ---------- dock ---------- */
+#dock-wrap{ position:fixed; z-index:var(--z-dock); transition:transform var(--dur-base) var(--ease); }
+#dock-wrap[data-side="bottom"]{ left:50%; bottom:max(10px,var(--safe-b)); transform:translateX(-50%); }
+#dock-wrap[data-side="bottom"].dock-hide{ transform:translateX(-50%) translateY(130%); }
+#dock-wrap[data-side="left"]{ left:max(10px,var(--safe-l)); top:50%; transform:translateY(-50%); }
+#dock-wrap[data-side="left"].dock-hide{ transform:translateY(-50%) translateX(-130%); }
+#dock-wrap[data-side="right"]{ right:max(10px,var(--safe-r)); top:50%; transform:translateY(-50%); }
+#dock-wrap[data-side="right"].dock-hide{ transform:translateY(-50%) translateX(130%); }
+#dock{
+  display:flex; gap:8px; padding:8px; background:var(--glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border-radius:var(--radius-full); border:1px solid var(--border-strong); box-shadow:var(--shadow-lg);
+}
+#dock-wrap[data-side="left"] #dock,#dock-wrap[data-side="right"] #dock{ flex-direction:column; }
+.dock-btn{
+  width:var(--dock-size); height:var(--dock-size); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center;
+  font-size:24px; cursor:pointer; transition:transform var(--dur-fast) var(--ease); position:relative; flex-shrink:0;
+  box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.14);
+}
+.dock-btn:hover{ transform:translateY(-6px); }
+.dock-btn:active{ transform:scale(.92); }
+.dock-btn .run-dot{ position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent); opacity:0; }
+.dock-btn.running .run-dot{ opacity:1; }
+.dock-divider{ width:1px; align-self:stretch; background:var(--border-strong); margin:4px 2px; }
+#dock-wrap[data-side="left"] .dock-divider,#dock-wrap[data-side="right"] .dock-divider{ width:auto; height:1px; margin:2px 4px; }
+@media (max-width:420px){ :root{ --dock-size:52px; } .dock-btn{ font-size:21px; } }
+
+/* ---------- windows ---------- */
+#window-layer{ position:absolute; inset:0; pointer-events:none; }
+.win{
+  position:absolute; display:flex; flex-direction:column; overflow:hidden; pointer-events:auto;
+  background:var(--bg-1); border-radius:var(--radius-lg); border:1px solid var(--border-strong);
+  box-shadow:var(--shadow-lg); transition:opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), left var(--dur-base) var(--ease), top var(--dur-base) var(--ease), width var(--dur-base) var(--ease), height var(--dur-base) var(--ease);
+  will-change:transform,left,top,width,height;
+}
+.win.dragging,.win.resizing{ transition:none !important; user-select:none; }
+.win.focused{ border-color:var(--border-strong); box-shadow:var(--shadow-lg), 0 0 0 1px var(--accent); }
+.win.minimized{ opacity:0; transform:scale(.85) translateY(70px); pointer-events:none; }
+.win.snapped-preview{ background:var(--accent); opacity:.16; border:2px dashed var(--accent); pointer-events:none; }
+.win-titlebar{
+  display:flex; align-items:center; gap:10px; padding:0 12px; height:38px; flex-shrink:0; cursor:grab;
+  background:var(--bg-2); border-bottom:1px solid var(--border); user-select:none; touch-action:none;
+}
+.win-titlebar:active{ cursor:grabbing; }
+.win-btns{ display:flex; gap:7px; flex-shrink:0; }
+.win-btn{ width:12px; height:12px; border-radius:50%; transition:filter var(--dur-fast); border:1px solid rgba(0,0,0,.2); }
+.win-btn:hover{ filter:brightness(1.3); }
+.win-btn.close{ background:var(--danger); }
+.win-btn.min{ background:var(--warning); }
+.win-btn.max{ background:var(--success); }
+.win-title{ flex:1; text-align:center; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+.win-title .tag{ font-family:var(--font-mono); font-size:9px; color:var(--text-2); background:var(--bg-3); padding:1px 5px; border-radius:4px; letter-spacing:.04em; }
+.win-body{ flex:1; position:relative; overflow:hidden; background:var(--bg-0); }
+.win-body iframe{ width:100%; height:100%; border:none; display:block; background:#fff; }
+.win-body .sysapp-content{ width:100%; height:100%; overflow-y:auto; }
+.win-resize{ position:absolute; width:16px; height:16px; z-index:5; }
+.win-resize.rs-se{ right:0; bottom:0; cursor:nwse-resize; }
+.win-resize.rs-sw{ left:0; bottom:0; cursor:nesw-resize; }
+.win-resize.rs-e{ right:0; top:16px; bottom:16px; width:7px; cursor:ew-resize; }
+.win-resize.rs-w{ left:0; top:16px; bottom:16px; width:7px; cursor:ew-resize; }
+.win-resize.rs-s{ left:16px; right:16px; bottom:0; height:7px; cursor:ns-resize; }
+.win-resize.rs-n{ left:16px; right:16px; top:0; height:7px; cursor:ns-resize; }
+@media (pointer:coarse){ .win-resize{ display:none; } }
+.win.maximized{ border-radius:0 !important; }
+
+/* mobile: fullscreen app windows */
+html[data-mode="mobile"] .win{
+  left:0 !important; top:0 !important; width:100% !important; height:100% !important;
+  border-radius:0; border:none; z-index:var(--z-win);
+}
+html[data-mode="mobile"] .win-titlebar{
+  height:calc(44px + var(--safe-t)); padding-top:var(--safe-t); cursor:default;
+  padding-left:max(10px,var(--safe-l)); padding-right:max(10px,var(--safe-r));
+}
+html[data-mode="mobile"] .win-btns{ display:none; }
+html[data-mode="mobile"] .win-close-mobile{ display:flex; width:30px; height:30px; align-items:center; justify-content:center; border-radius:50%; background:var(--bg-3); font-size:14px; flex-shrink:0; }
+.win-close-mobile{ display:none; }
+html[data-mode="desktop"] .win-close-mobile{ display:none !important; }
+
+/* ---------- context menu ---------- */
+#ctxmenu{
+  position:fixed; z-index:var(--z-ctx); background:var(--glass); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  border:1px solid var(--border-strong); border-radius:var(--radius-md); padding:6px; min-width:190px; box-shadow:var(--shadow-lg);
+}
+.ctx-item{ padding:9px 12px; border-radius:var(--radius-xs); font-size:13px; display:flex; align-items:center; gap:9px; transition:background var(--dur-fast); }
+.ctx-item:hover{ background:var(--bg-2); }
+.ctx-item.danger{ color:var(--danger); }
+.ctx-item[disabled]{ opacity:.4; pointer-events:none; }
+.ctx-sep{ height:1px; background:var(--border); margin:5px 4px; }
+
+/* ---------- toasts ---------- */
+#toast-area{ position:fixed; top:calc(var(--topbar-h) + var(--safe-t) + 10px); right:max(10px,var(--safe-r)); z-index:var(--z-toast); display:flex; flex-direction:column; gap:8px; width:min(310px,calc(100vw - 20px)); pointer-events:none; }
+html[data-mode="mobile"] #toast-area{ left:max(10px,var(--safe-l)); right:max(10px,var(--safe-r)); width:auto; align-items:stretch; }
+.toast{
+  background:var(--glass); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border:1px solid var(--border-strong);
+  border-radius:var(--radius-md); padding:12px 14px; box-shadow:var(--shadow-md); transform:translateX(120%); opacity:0;
+  transition:transform var(--dur-slow) var(--ease), opacity var(--dur-slow) var(--ease); pointer-events:auto; display:flex; gap:10px; align-items:flex-start;
+}
+.toast.show{ transform:translateX(0); opacity:1; }
+.toast-ic{ font-size:16px; flex-shrink:0; margin-top:1px; }
+.toast-title{ font-size:12.5px; font-weight:600; }
+.toast-body{ font-size:11.5px; color:var(--text-1); margin-top:2px; line-height:1.5; word-break:break-word; }
+.toast.error .toast-title{ color:var(--danger); }
+
+/* ---------- modal ---------- */
+#modal-root{ position:fixed; inset:0; z-index:var(--z-modal); display:flex; align-items:center; justify-content:center; padding:20px; }
+#modal-backdrop{ position:absolute; inset:0; background:rgba(8,6,4,.55); backdrop-filter:blur(2px); }
+html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
+.modal-card{ position:relative; width:min(440px,100%); max-height:82vh; overflow-y:auto; background:var(--bg-1); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); padding:22px; }
+.modal-title{ font-size:16px; font-weight:700; margin-bottom:4px; }
+.modal-sub{ font-size:12.5px; color:var(--text-1); margin-bottom:16px; line-height:1.6; }
+.modal-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+/* ---------- shared controls (used inside system apps) ---------- */
+.btn{ display:inline-flex; align-items:center; gap:6px; background:var(--accent); color:var(--accent-ink); border:none; padding:9px 16px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:600; transition:filter var(--dur-fast), transform var(--dur-fast); white-space:nowrap; }
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:scale(.97); }
+.btn.secondary{ background:var(--bg-2); color:var(--text-0); border:1px solid var(--border-strong); }
+.btn.danger{ background:var(--danger); color:#fff; }
+.btn.ghost{ background:transparent; color:var(--text-1); padding:9px 10px; }
+.btn.ghost:hover{ background:var(--bg-2); color:var(--text-0); }
+.btn.block{ width:100%; justify-content:center; }
+.btn:disabled{ opacity:.45; pointer-events:none; }
+.field-label{ font-size:11.5px; color:var(--text-1); margin-bottom:6px; display:block; font-weight:600; letter-spacing:.02em; }
+.text-input,.textarea-input{ width:100%; background:var(--bg-0); border:1px solid var(--border-strong); padding:9px 12px; border-radius:var(--radius-sm); color:var(--text-0); font-size:13px; outline:none; }
+.text-input:focus,.textarea-input:focus{ border-color:var(--accent); }
+.textarea-input{ resize:vertical; font-family:var(--font-mono); line-height:1.6; }
+.toggle-switch{ width:42px; height:24px; border-radius:var(--radius-full); background:var(--bg-3); position:relative; flex-shrink:0; transition:background var(--dur-fast); border:1px solid var(--border-strong); }
+.toggle-switch.on{ background:var(--accent); border-color:var(--accent); }
+.toggle-switch::after{ content:''; position:absolute; width:18px; height:18px; background:#fff; border-radius:50%; top:2px; left:2px; transition:transform var(--dur-fast) var(--ease); box-shadow:0 1px 3px rgba(0,0,0,.3); }
+.toggle-switch.on::after{ transform:translateX(18px); }
+.seg-control{ display:flex; background:var(--bg-0); border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:3px; gap:2px; }
+.seg-btn{ flex:1; padding:7px 10px; border-radius:calc(var(--radius-sm) - 3px); font-size:12px; text-align:center; color:var(--text-1); transition:background var(--dur-fast),color var(--dur-fast); }
+.seg-btn.active{ background:var(--accent); color:var(--accent-ink); font-weight:600; }
+.swatch{ width:28px; height:28px; border-radius:50%; border:2px solid transparent; flex-shrink:0; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15); }
+.swatch.active{ border-color:var(--text-0); }
+.card{ background:var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 2px; border-bottom:1px solid var(--border); }
+.row:last-child{ border-bottom:none; }
+.row-text b{ display:block; font-size:13px; font-weight:600; }
+.row-text span{ display:block; font-size:11.5px; color:var(--text-1); margin-top:2px; }
+.section-title{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-2); margin:20px 4px 8px; }
+.section-title:first-child{ margin-top:2px; }
+.empty-hint{ padding:26px 14px; text-align:center; color:var(--text-2); font-size:12.5px; line-height:1.8; }
+.code-block{ font-family:var(--font-mono); font-size:11px; line-height:1.7; background:var(--bg-0); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; overflow:auto; white-space:pre; max-height:320px; }
+.pill{ font-family:var(--font-mono); font-size:9.5px; padding:2px 7px; border-radius:var(--radius-full); background:var(--bg-3); color:var(--text-1); letter-spacing:.03em; }
+.pill.on{ background:var(--accent); color:var(--accent-ink); }
+
+/* ---------- app store ---------- */
+.app-page{ padding:16px max(16px,var(--safe-l)) calc(30px + var(--safe-b)); }
+.page-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+.page-head h2{ font-size:17px; font-weight:700; }
+.store-search{ margin-bottom:14px; }
+.app-card{ display:flex; gap:12px; padding:14px; background:var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:10px; align-items:flex-start; }
+.app-card .icon-glyph{ width:44px; height:44px; font-size:20px; flex-shrink:0; }
+.app-card-body{ flex:1; min-width:0; }
+.app-card-body h4{ font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:7px; }
+.app-card-body p{ font-size:12px; color:var(--text-1); margin-top:3px; line-height:1.55; }
+.app-card-meta{ font-size:10.5px; color:var(--text-2); margin-top:6px; font-family:var(--font-mono); }
+.app-card-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.drop-zone{ border:1.5px dashed var(--border-strong); border-radius:var(--radius-md); padding:26px 16px; text-align:center; margin-bottom:18px; transition:border-color var(--dur-fast),background var(--dur-fast); }
+.drop-zone.drag-over{ border-color:var(--accent); background:var(--bg-1); }
+.drop-zone .dz-ic{ font-size:26px; margin-bottom:8px; }
+.drop-zone p{ font-size:12px; color:var(--text-1); margin-bottom:12px; line-height:1.6; }
+.template-row{ display:flex; align-items:center; gap:12px; }
+
+/* ---------- settings ---------- */
+.wallpaper-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:10px; }
+.wp-swatch{ aspect-ratio:1; border-radius:var(--radius-sm); cursor:pointer; border:2px solid transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15); }
+.wp-swatch.active{ border-color:var(--accent); }
+.storage-bar-track{ height:7px; border-radius:999px; background:var(--bg-0); overflow:hidden; margin-top:8px; border:1px solid var(--border); }
+.storage-bar-fill{ height:100%; background:var(--accent); border-radius:999px; }
+
+/* ---------- responsive niceties ---------- */
+@media (max-width:520px){
+  #desktop{ grid-template-columns:repeat(auto-fill,68px); grid-auto-rows:86px; }
+  .icon-glyph{ width:48px; height:48px; font-size:21px; }
+  .lock-time{ font-size:46px; }
+  .modal-card{ padding:18px; }
+}
+</style>
+</head>
+<body>
+
+<div id="boot-screen">
+  <div class="boot-mark">G</div>
+  <div class="boot-word">G U I O S</div>
+  <div class="boot-log" id="boot-log"></div>
+  <div class="boot-err" id="boot-err"></div>
+  <button class="boot-skip" id="boot-skip">スキップして起動</button>
+</div>
+
+<div id="lock-screen" class="hidden">
+  <div class="lock-time" id="lock-time">00:00</div>
+  <div class="lock-date" id="lock-date">-</div>
+  <div class="lock-hint">タップしてロック解除</div>
+</div>
+
+<div id="shell">
+  <div id="topbar">
+    <span class="tb-brand"><b>G</b>UIOS</span>
+    <div class="tb-sep"></div>
+    <span id="topbar-appname">ホーム</span>
+    <div class="tb-spacer"></div>
+    <button class="tb-btn" id="topbar-lock-btn" title="ロック">🔒</button>
+    <span id="topbar-clock">00:00</span>
+  </div>
+  <div id="desktop-wrap">
+    <div id="desktop-toolbar">
+      <input id="desktop-search" type="text" placeholder="アプリを検索" autocomplete="off">
+    </div>
+    <div id="desktop-canvas">
+      <div id="desktop"></div>
+      <div id="window-layer"></div>
+    </div>
+  </div>
+  <div id="dock-wrap" data-side="bottom"><div id="dock"></div></div>
+</div>
+
+<div id="ctxmenu" class="hidden"></div>
+<div id="toast-area"></div>
+
+<div id="modal-root" class="hidden">
+  <div id="modal-backdrop"></div>
+  <div class="modal-card" id="modal-card"></div>
+</div>
+
+<input type="file" id="install-file-input" accept=".html,.htm,text/html" class="visually-hidden">
+
+<template id="tpl-app-notes">
+<!--GUIOS-APP {"id":"notes","name":"メモ","icon":"📝","color":"#c4963a","version":"1.0.0","author":"GUIOS","description":"シンプルなメモ帳。GUIOS.storage を使ったデータ保存のサンプルです。"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{ --bg:#18140f; --panel:#221c15; --line:#332a1e; --ink:#f3ead8; --sub:#a89679; --accent:#c4963a; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); height:100vh; display:flex; overflow:hidden; }
+  #list{ width:38%; min-width:120px; max-width:220px; border-right:1px solid var(--line); overflow-y:auto; flex-shrink:0; }
+  #list .item{ padding:12px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12.5px; }
+  #list .item.active{ background:var(--panel); border-left:3px solid var(--accent); }
+  #list .item .t{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #list .item .d{ color:var(--sub); font-size:10.5px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  #toolbar{ display:flex; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  button{ background:var(--panel); border:1px solid var(--line); color:var(--ink); padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer; }
+  button.primary{ background:var(--accent); color:#1a1206; border-color:var(--accent); font-weight:600; }
+  textarea{ flex:1; border:none; background:transparent; color:var(--ink); padding:16px; font-size:14px; line-height:1.7; resize:none; outline:none; }
+  #empty{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--sub); font-size:12.5px; padding:20px; text-align:center; }
+</style>
+</head>
+<body>
+  <div id="list"></div>
+  <div id="main">
+    <div id="toolbar">
+      <button class="primary" id="btnNew">＋ 新規</button>
+      <button id="btnDel">削除</button>
+      <span style="flex:1"></span>
+      <span id="status" style="align-self:center;font-size:10.5px;color:var(--sub)"></span>
+    </div>
+    <textarea id="editor" placeholder="ここに入力…" style="display:none"></textarea>
+    <div id="empty">左上の「＋ 新規」からメモを作成してください</div>
+  </div>
+<script>
+(function(){
+  var notes = [];
+  var activeId = null;
+  var saveTimer = null;
+  var hasSDK = !!(window.GUIOS && window.GUIOS.storage);
+
+  function uid(){ return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function firstLine(s){ var l = (s || '').split('\n')[0].trim(); return l || '(無題)'; }
+
+  async function load(){
+    if(hasSDK){
+      try{ var v = await GUIOS.storage.get('notes'); if(Array.isArray(v)) notes = v; }catch(e){}
+    }
+    if(!notes.length){
+      try{ var raw = localStorage.getItem('notes_fallback'); if(raw) notes = JSON.parse(raw); }catch(e){}
+    }
+    renderList();
+    if(notes.length) selectNote(notes[0].id);
+  }
+  async function persist(){
+    if(hasSDK){ try{ await GUIOS.storage.set('notes', notes); }catch(e){} }
+    try{ localStorage.setItem('notes_fallback', JSON.stringify(notes)); }catch(e){}
+  }
+  function renderList(){
+    var list = document.getElementById('list');
+    list.innerHTML = '';
+    notes.slice().sort(function(a,b){ return b.updated - a.updated; }).forEach(function(n){
+      var d = document.createElement('div');
+      d.className = 'item' + (n.id === activeId ? ' active' : '');
+      d.innerHTML = '<div class="t"></div><div class="d"></div>';
+      d.querySelector('.t').textContent = firstLine(n.body);
+      d.querySelector('.d').textContent = new Date(n.updated).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      d.onclick = function(){ selectNote(n.id); };
+      list.appendChild(d);
+    });
+  }
+  function selectNote(id){
+    activeId = id;
+    var n = notes.find(function(x){ return x.id === id; });
+    var ed = document.getElementById('editor');
+    var empty = document.getElementById('empty');
+    if(!n){ ed.style.display = 'none'; empty.style.display = 'flex'; renderList(); return; }
+    ed.style.display = 'block'; empty.style.display = 'none';
+    ed.value = n.body || '';
+    renderList();
+  }
+  document.getElementById('btnNew').onclick = function(){
+    var n = { id: uid(), body: '', updated: Date.now() };
+    notes.push(n); persist(); selectNote(n.id);
+    document.getElementById('editor').focus();
+  };
+  document.getElementById('btnDel').onclick = function(){
+    if(!activeId) return;
+    notes = notes.filter(function(n){ return n.id !== activeId; });
+    activeId = notes.length ? notes[0].id : null;
+    persist(); selectNote(activeId);
+  };
+  document.getElementById('editor').addEventListener('input', function(e){
+    var n = notes.find(function(x){ return x.id === activeId; });
+    if(!n) return;
+    n.body = e.target.value; n.updated = Date.now();
+    clearTimeout(saveTimer);
+    var st = document.getElementById('status');
+    st.textContent = '編集中…';
+    saveTimer = setTimeout(function(){ persist(); st.textContent = '保存済み'; renderList(); }, 500);
+  });
+  load();
+})();
+</script>
+</body>
+</html>
+</template>
+
+<template id="tpl-app-calculator">
+<!--GUIOS-APP {"id":"calculator","name":"電卓","icon":"🔢","color":"#3f7f8a","version":"1.0.0","author":"GUIOS","description":"四則演算に対応したシンプルな電卓です。"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{ --bg:#0f1a1b; --key:#16282a; --key2:#1d3436; --op:#2d5a5f; --ink:#eaf3f2; --accent:#3f9aa6; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  #disp{ flex:0 0 auto; padding:22px 18px 10px; text-align:right; }
+  #expr{ font-size:12px; color:#7fa8ab; min-height:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #val{ font-size:40px; font-weight:300; font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; }
+  #pad{ flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(5,1fr); gap:8px; padding:10px; }
+  button{ border:none; border-radius:14px; background:var(--key); color:var(--ink); font-size:19px; cursor:pointer; transition:filter .1s, transform .08s; }
+  button:active{ transform:scale(.94); filter:brightness(1.25); }
+  button.op{ background:var(--op); color:#fff; }
+  button.fn{ background:var(--key2); color:#9fd4d8; font-size:16px; }
+  button.eq{ background:var(--accent); color:#062023; font-weight:700; }
+  button.zero{ grid-column:span 2; }
+</style>
+</head>
+<body>
+  <div id="disp"><div id="expr">&nbsp;</div><div id="val">0</div></div>
+  <div id="pad"></div>
+<script>
+(function(){
+  var layout = [
+    ['C','fn'], ['±','fn'], ['%','fn'], ['÷','op'],
+    ['7',''], ['8',''], ['9',''], ['×','op'],
+    ['4',''], ['5',''], ['6',''], ['−','op'],
+    ['1',''], ['2',''], ['3',''], ['+','op'],
+    ['0','zero'], ['.',''], ['=','eq']
+  ];
+  var pad = document.getElementById('pad');
+  layout.forEach(function(item){
+    var b = document.createElement('button');
+    b.textContent = item[0];
+    if(item[1]) b.className = item[1];
+    b.dataset.k = item[0];
+    pad.appendChild(b);
+  });
+  var st = { cur:'0', prev:null, op:null, justEq:false };
+  var elVal = document.getElementById('val');
+  var elExpr = document.getElementById('expr');
+  var opMap = { '÷':'/', '×':'*', '−':'-', '+':'+' };
+
+  function fmt(n){
+    if(n === 'Error') return n;
+    var s = String(n);
+    if(s.length > 13){ n = parseFloat(Number(n).toPrecision(10)); s = String(n); }
+    return s;
+  }
+  function render(){
+    elVal.textContent = fmt(st.cur);
+    elExpr.textContent = st.prev !== null ? (fmt(st.prev) + ' ' + (st.op || '')) : '\u00a0';
+  }
+  function calc(a, b, op){
+    switch(op){ case '+': return a + b; case '-': return a - b; case '*': return a * b; case '/': return b === 0 ? 'Error' : a / b; }
+    return b;
+  }
+  pad.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var k = b.dataset.k;
+    if(k === 'C'){ st = { cur:'0', prev:null, op:null, justEq:false }; }
+    else if(k === '±'){ st.cur = String(parseFloat(st.cur) * -1); }
+    else if(k === '%'){ st.cur = String(parseFloat(st.cur) / 100); }
+    else if(opMap[k]){
+      if(st.prev !== null && st.op && !st.justEq){
+        var r = calc(st.prev, parseFloat(st.cur), opMap[st.op]);
+        st.prev = r === 'Error' ? 0 : r; st.cur = String(st.prev);
+      } else { st.prev = parseFloat(st.cur); }
+      st.op = k; st.justEq = false;
+    } else if(k === '='){
+      if(st.prev !== null && st.op){
+        var r2 = calc(st.prev, parseFloat(st.cur), opMap[st.op]);
+        st.cur = String(r2); st.prev = null; st.op = null; st.justEq = true;
+      }
+    } else if(k === '.'){
+      if(st.justEq){ st.cur = '0'; st.justEq = false; }
+      if(st.cur.indexOf('.') === -1) st.cur += '.';
+    } else {
+      if(st.justEq){ st.cur = '0'; st.justEq = false; }
+      st.cur = (st.cur === '0') ? k : st.cur + k;
+      if(st.cur.length > 15) st.cur = st.cur.slice(0, 15);
+    }
+    render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
+</template>
+
+<template id="tpl-app-clock">
+<!--GUIOS-APP {"id":"clock","name":"時計","icon":"⏱️","color":"#c4643a","version":"1.0.0","author":"GUIOS","description":"時計・ストップウォッチ・タイマーの3機能を備えたアプリです。"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{ --bg:#1a120d; --panel:#241811; --line:#3a2a1c; --ink:#f5e9db; --sub:#b39678; --accent:#d97a4a; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  #tabs{ display:flex; border-bottom:1px solid var(--line); flex-shrink:0; }
+  #tabs button{ flex:1; padding:12px 4px; background:none; border:none; color:var(--sub); font-size:12.5px; cursor:pointer; border-bottom:2px solid transparent; }
+  #tabs button.active{ color:var(--accent); border-color:var(--accent); font-weight:600; }
+  .pane{ flex:1; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px; overflow:auto; }
+  .pane.active{ display:flex; }
+  #clockTime{ font-size:52px; font-weight:200; font-variant-numeric:tabular-nums; letter-spacing:-1px; }
+  #clockDate{ font-size:13px; color:var(--sub); margin-top:6px; }
+  .big-time{ font-size:44px; font-variant-numeric:tabular-nums; font-weight:300; margin-bottom:22px; }
+  .ctrl-row{ display:flex; gap:12px; }
+  .rbtn{ width:64px; height:64px; border-radius:50%; border:1px solid var(--line); background:var(--panel); color:var(--ink); font-size:12.5px; cursor:pointer; }
+  .rbtn.go{ background:var(--accent); color:#2a1206; border-color:var(--accent); font-weight:700; }
+  .rbtn.stop{ background:#7a2d22; color:#fff; border-color:#7a2d22; }
+  #laps{ width:100%; max-width:280px; margin-top:18px; max-height:120px; overflow-y:auto; font-size:12px; font-variant-numeric:tabular-nums; }
+  #laps div{ display:flex; justify-content:space-between; padding:5px 8px; border-bottom:1px solid var(--line); color:var(--sub); }
+  .timer-presets{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; }
+  .timer-presets button{ padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink); font-size:12px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div id="tabs">
+    <button data-p="clock" class="active">時計</button>
+    <button data-p="stopwatch">ストップウォッチ</button>
+    <button data-p="timer">タイマー</button>
+  </div>
+
+  <div class="pane active" id="p-clock">
+    <div id="clockTime">00:00:00</div>
+    <div id="clockDate">-</div>
+  </div>
+
+  <div class="pane" id="p-stopwatch">
+    <div class="big-time" id="swTime">00:00.00</div>
+    <div class="ctrl-row">
+      <button class="rbtn go" id="swStartStop">開始</button>
+      <button class="rbtn" id="swLap">ラップ</button>
+      <button class="rbtn" id="swReset">リセット</button>
+    </div>
+    <div id="laps"></div>
+  </div>
+
+  <div class="pane" id="p-timer">
+    <div class="timer-presets">
+      <button data-s="60">1分</button><button data-s="180">3分</button><button data-s="300">5分</button><button data-s="600">10分</button>
+    </div>
+    <div class="big-time" id="tmTime">01:00</div>
+    <div class="ctrl-row">
+      <button class="rbtn go" id="tmStartStop">開始</button>
+      <button class="rbtn" id="tmReset">リセット</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.onclick = function(){
+      document.querySelectorAll('#tabs button').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.pane').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      document.getElementById('p-' + b.dataset.p).classList.add('active');
+    };
+  });
+
+  function pad2(n){ return String(n).padStart(2, '0'); }
+
+  var lastClockStr = '';
+  function tickClock(){
+    var n = new Date();
+    var str = pad2(n.getHours()) + ':' + pad2(n.getMinutes()) + ':' + pad2(n.getSeconds());
+    if(str !== lastClockStr){ document.getElementById('clockTime').textContent = str; lastClockStr = str; }
+    document.getElementById('clockDate').textContent = n.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  var sw = { running:false, startAt:0, elapsed:0, laps:[] };
+  var swTimeEl = document.getElementById('swTime');
+  function fmtSw(ms){
+    var m = Math.floor(ms / 60000);
+    var s = Math.floor((ms % 60000) / 1000);
+    var cs = Math.floor((ms % 1000) / 10);
+    return pad2(m) + ':' + pad2(s) + '.' + pad2(cs);
+  }
+  function swLoop(){
+    if(!sw.running) return;
+    var now = sw.elapsed + (performance.now() - sw.startAt);
+    swTimeEl.textContent = fmtSw(now);
+    requestAnimationFrame(swLoop);
+  }
+  document.getElementById('swStartStop').onclick = function(e){
+    if(!sw.running){
+      sw.running = true; sw.startAt = performance.now();
+      e.target.textContent = '停止'; e.target.classList.remove('go'); e.target.classList.add('stop');
+      requestAnimationFrame(swLoop);
+    } else {
+      sw.running = false; sw.elapsed += performance.now() - sw.startAt;
+      e.target.textContent = '開始'; e.target.classList.add('go'); e.target.classList.remove('stop');
+    }
+  };
+  document.getElementById('swLap').onclick = function(){
+    var now = sw.elapsed + (sw.running ? performance.now() - sw.startAt : 0);
+    var d = document.createElement('div');
+    d.innerHTML = '<span>ラップ ' + (sw.laps.length + 1) + '</span><span></span>';
+    d.querySelector('span:last-child').textContent = fmtSw(now);
+    document.getElementById('laps').prepend(d);
+    sw.laps.push(now);
+  };
+  document.getElementById('swReset').onclick = function(){
+    sw = { running:false, startAt:0, elapsed:0, laps:[] };
+    swTimeEl.textContent = '00:00.00';
+    document.getElementById('laps').innerHTML = '';
+    var btn = document.getElementById('swStartStop');
+    btn.textContent = '開始'; btn.classList.add('go'); btn.classList.remove('stop');
+  };
+
+  var tm = { total:60, remaining:60, running:false, iv:null };
+  var tmTimeEl = document.getElementById('tmTime');
+  function fmtTm(sec){ sec = Math.max(0, Math.ceil(sec)); return pad2(Math.floor(sec / 60)) + ':' + pad2(sec % 60); }
+  function renderTm(){ tmTimeEl.textContent = fmtTm(tm.remaining); }
+  document.querySelectorAll('.timer-presets button').forEach(function(b){
+    b.onclick = function(){ tm.total = parseInt(b.dataset.s, 10); tm.remaining = tm.total; renderTm(); };
+  });
+  document.getElementById('tmStartStop').onclick = function(e){
+    if(!tm.running){
+      tm.running = true; e.target.textContent = '一時停止'; e.target.classList.remove('go'); e.target.classList.add('stop');
+      var last = performance.now();
+      tm.iv = setInterval(function(){
+        var now = performance.now();
+        tm.remaining -= (now - last) / 1000; last = now;
+        if(tm.remaining <= 0){
+          tm.remaining = 0; renderTm(); clearInterval(tm.iv); tm.running = false;
+          e.target.textContent = '開始'; e.target.classList.add('go'); e.target.classList.remove('stop');
+          if(window.GUIOS){ try{ GUIOS.notify('タイマー終了', { type:'success' }); }catch(err){} try{ GUIOS.haptic(); }catch(err){} }
+          return;
+        }
+        renderTm();
+      }, 100);
+    } else {
+      tm.running = false; clearInterval(tm.iv);
+      e.target.textContent = '開始'; e.target.classList.add('go'); e.target.classList.remove('stop');
+    }
+  };
+  document.getElementById('tmReset').onclick = function(){
+    clearInterval(tm.iv); tm.running = false; tm.remaining = tm.total; renderTm();
+    var btn = document.getElementById('tmStartStop'); btn.textContent = '開始'; btn.classList.add('go'); btn.classList.remove('stop');
+  };
+  renderTm();
+})();
+</script>
+</body>
+</html>
+</template>
+
+<template id="tpl-app-paint">
+<!--GUIOS-APP {"id":"paint","name":"お絵かき","icon":"🎨","color":"#8672a6","version":"1.0.0","author":"GUIOS","description":"シンプルなお絵かきアプリ。Canvas APIのサンプルです。"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{ --bg:#150f1a; --panel:#1f1727; --line:#332844; --ink:#efe8f7; --accent:#9b7fc4; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  #toolbar{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid var(--line); flex-wrap:wrap; flex-shrink:0; }
+  #colors{ display:flex; gap:6px; }
+  .cw{ width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+  .cw.active{ border-color:#fff; }
+  #canvasWrap{ flex:1; position:relative; background:#fff; touch-action:none; overflow:hidden; }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; }
+  select,button{ background:var(--panel); border:1px solid var(--line); color:var(--ink); padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; }
+  #size{ width:80px; }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <div id="colors"></div>
+    <input type="range" id="size" min="1" max="40" value="5">
+    <select id="mode"><option value="pen">ペン</option><option value="eraser">消しゴム</option></select>
+    <button id="clear">クリア</button>
+    <button id="save">保存 (PNG)</button>
+  </div>
+  <div id="canvasWrap"><canvas id="cv"></canvas></div>
+<script>
+(function(){
+  var palette = ['#2b2530', '#e2584a', '#e2a03f', '#5cb87a', '#4a90d9', '#9b7fc4', '#efe8f7'];
+  var colorsEl = document.getElementById('colors');
+  var state = { color: palette[0], size: 5, mode: 'pen' };
+  palette.forEach(function(c, i){
+    var d = document.createElement('div');
+    d.className = 'cw' + (i === 0 ? ' active' : '');
+    d.style.background = c;
+    d.onclick = function(){
+      document.querySelectorAll('.cw').forEach(function(x){ x.classList.remove('active'); });
+      d.classList.add('active'); state.color = c;
+    };
+    colorsEl.appendChild(d);
+  });
+  document.getElementById('size').oninput = function(e){ state.size = parseInt(e.target.value, 10); };
+  document.getElementById('mode').onchange = function(e){ state.mode = e.target.value; };
+
+  var canvas = document.getElementById('cv');
+  var ctx = canvas.getContext('2d');
+  var wrap = document.getElementById('canvasWrap');
+
+  function resize(){
+    var rect = wrap.getBoundingClientRect();
+    var data = canvas.width ? canvas.toDataURL() : null;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, rect.width, rect.height);
+    if(data){ var img = new Image(); img.onload = function(){ ctx.drawImage(img, 0, 0, rect.width, rect.height); }; img.src = data; }
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var drawing = false, lastX = 0, lastY = 0;
+  function pos(e){
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  canvas.addEventListener('pointerdown', function(e){
+    drawing = true; var p = pos(e); lastX = p.x; lastY = p.y;
+    canvas.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.arc(p.x, p.y, state.size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = state.mode === 'eraser' ? '#fff' : state.color; ctx.fill();
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(!drawing) return;
+    var p = pos(e);
+    ctx.strokeStyle = state.mode === 'eraser' ? '#fff' : state.color;
+    ctx.lineWidth = state.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+    lastX = p.x; lastY = p.y;
+  });
+  function endStroke(){ drawing = false; }
+  canvas.addEventListener('pointerup', endStroke);
+  canvas.addEventListener('pointercancel', endStroke);
+
+  document.getElementById('clear').onclick = function(){
+    var rect = wrap.getBoundingClientRect();
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, rect.width, rect.height);
+  };
+  document.getElementById('save').onclick = function(){
+    var a = document.createElement('a');
+    a.download = 'drawing.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+})();
+</script>
+</body>
+</html>
+</template>
+
+<template id="tpl-app-wallpaper">
+<!--GUIOS-APP {"id":"wallpaper","name":"壁紙","icon":"🖼️","color":"#5b8fd9","version":"1.0.0","author":"GUIOS","description":"ホーム画面の壁紙を変更します（GUIOS.wallpaper の使用例）"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{ --bg:#101620; --panel:#182130; --line:#28344a; --ink:#e7edf7; --sub:#8ea2c4; --accent:#5b8fd9; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:18px; }
+  h2{ font-size:15px; margin:0 0 4px; }
+  p.sub{ font-size:11.5px; color:var(--sub); margin:0 0 16px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(108px,1fr)); gap:12px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px; cursor:pointer; text-align:center; position:relative; }
+  .card.active{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .swatch{ width:100%; aspect-ratio:1.4; border-radius:10px; margin-bottom:8px; }
+  .name{ font-size:11.5px; }
+  .badge{ position:absolute; top:6px; right:6px; font-size:9px; background:var(--accent); color:#08131f; padding:2px 6px; border-radius:999px; font-weight:700; }
+  .custom-row{ display:flex; align-items:center; gap:10px; margin-top:18px; padding:12px; background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+  input[type=color]{ width:36px; height:36px; border:none; background:none; padding:0; cursor:pointer; }
+  button{ background:var(--accent); color:#08131f; border:none; padding:8px 16px; border-radius:9px; font-weight:600; font-size:12.5px; cursor:pointer; }
+  .offline{ color:#e2584a; font-size:12.5px; line-height:1.7; }
+</style>
+</head>
+<body>
+  <h2>壁紙を変更</h2>
+  <p class="sub">タップしてホーム画面に適用します</p>
+  <div class="grid" id="grid"></div>
+  <div class="custom-row">
+    <input type="color" id="customColor" value="#5b8fd9">
+    <div style="flex:1;font-size:11.5px;color:var(--sub);">カスタムカラー</div>
+    <button id="applyCustom">適用</button>
+  </div>
+<script>
+  var PREVIEW = {
+    graphite: 'linear-gradient(155deg,#3a3226,#141210)',
+    brass: 'linear-gradient(155deg,#4a3a1c,#141210)',
+    dusk: 'linear-gradient(155deg,#2a3244,#141210)',
+    plain: '#141210',
+    custom: 'conic-gradient(from 180deg,#e2a03f,#5b8fd9,#6fae6b,#c4643a,#e2a03f)'
+  };
+  var hasSDK = !!(window.GUIOS && window.GUIOS.wallpaper);
+  var current = { wallpaper: 'graphite', customWallpaper: '#5b8fd9' };
+
+  function render(list){
+    var grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    list.forEach(function(wp){
+      var card = document.createElement('div');
+      card.className = 'card' + (current.wallpaper === wp.id ? ' active' : '');
+      var sw = document.createElement('div');
+      sw.className = 'swatch';
+      sw.style.background = PREVIEW[wp.id] || '#333';
+      var nm = document.createElement('div');
+      nm.className = 'name';
+      nm.textContent = wp.name;
+      card.appendChild(sw);
+      card.appendChild(nm);
+      if(current.wallpaper === wp.id){
+        var b = document.createElement('div'); b.className = 'badge'; b.textContent = '適用中'; card.appendChild(b);
+      }
+      card.onclick = function(){ apply(wp.id, null); };
+      grid.appendChild(card);
+    });
+  }
+
+  async function load(){
+    if(!hasSDK){
+      document.body.innerHTML = '<p class="offline">この機能はGUIOS内でのみ使用できます。<br>機能ストアからインストールして開いてください。</p>';
+      return;
+    }
+    var list = await GUIOS.wallpaper.list();
+    current = list.current || current;
+    document.getElementById('customColor').value = current.customWallpaper || '#5b8fd9';
+    render(list.wallpapers || []);
+  }
+  async function apply(id, customColor){
+    if(!hasSDK) return;
+    await GUIOS.wallpaper.set({ id: id, customColor: customColor });
+    current.wallpaper = id;
+    if(customColor) current.customWallpaper = customColor;
+    await GUIOS.notify('壁紙を変更しました', { type:'success' });
+    load();
+  }
+  document.getElementById('applyCustom').onclick = function(){
+    apply('custom', document.getElementById('customColor').value);
+  };
+  load();
+</script>
+</body>
+</html>
+</template>
+
+<script>
+'use strict';
+/* ============================================================
+   GUIOS kernel
+   ------------------------------------------------------------
+   Modules: utils, StorageBackend, Settings, AppRegistry,
+   WindowManager, SandboxBridge, UI renderers, boot sequence.
+   Kept as small, single-purpose functions so any one module
+   can fail without taking the others down with it.
+   ============================================================ */
+
+/* ---------------- utils ---------------- */
+const $ = (id) => document.getElementById(id);
+const qs = (sel, root) => (root || document).querySelector(sel);
+const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+const uid = (prefix) => (prefix || 'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function slugify(s){
+  const base = String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  return base || 'app';
+}
+function bytesOf(s){ try{ return new Blob([s || '']).size; }catch(e){ return (s || '').length; } }
+function fmtBytes(n){
+  if(n < 1024) return n + ' B';
+  if(n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+function debounce(fn, ms){
+  let t = null;
+  return function(){
+    const args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function(){ fn.apply(ctx, args); }, ms);
+  };
+}
+function safeJSONParse(s, fallback){
+  try{ return JSON.parse(s); }catch(e){ return fallback; }
+}
+
+/* ---------------- storage backend (tiered, never throws) ----------------
+   1) window.storage  — Claude.ai artifact key/value store (persists across
+      sessions when GUIOS is opened as a Claude artifact)
+   2) localStorage    — when GUIOS is downloaded/hosted and opened directly
+      in a normal browser tab
+   3) in-memory Map   — last resort so the shell always works, even if
+      every persistence layer is unavailable (just won't survive reload)
+------------------------------------------------------------------------- */
+const StorageBackend = (function(){
+  const hasClaude = (typeof window.storage === 'object' && window.storage && typeof window.storage.get === 'function');
+  let hasLocal = false;
+  try{ const k = '__guios_probe__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); hasLocal = true; }catch(e){ hasLocal = false; }
+  const mem = new Map();
+  const backendName = hasClaude ? 'cloud-kv' : (hasLocal ? 'local' : 'memory');
+
+  async function get(key){
+    if(hasClaude){
+      try{ const r = await window.storage.get(key, false); return r ? r.value : null; }catch(e){ return null; }
+    }
+    if(hasLocal){ try{ return localStorage.getItem('guios:' + key); }catch(e){} }
+    return mem.has(key) ? mem.get(key) : null;
+  }
+  async function set(key, value){
+    if(hasClaude){
+      try{ await window.storage.set(key, value, false); return true; }catch(e){ /* fall through */ }
+    }
+    if(hasLocal){ try{ localStorage.setItem('guios:' + key, value); return true; }catch(e){} }
+    mem.set(key, value);
+    return true;
+  }
+  async function del(key){
+    if(hasClaude){ try{ await window.storage.delete(key, false); }catch(e){} }
+    if(hasLocal){ try{ localStorage.removeItem('guios:' + key); }catch(e){} }
+    mem.delete(key);
+    return true;
+  }
+  async function list(prefix){
+    prefix = prefix || '';
+    if(hasClaude){
+      try{ const r = await window.storage.list(prefix, false); return (r && r.keys) || []; }catch(e){ return []; }
+    }
+    if(hasLocal){
+      try{
+        const out = [];
+        for(let i = 0; i < localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.indexOf('guios:') === 0){
+            const bare = k.slice(6);
+            if(!prefix || bare.indexOf(prefix) === 0) out.push(bare);
+          }
+        }
+        return out;
+      }catch(e){ return []; }
+    }
+    return Array.from(mem.keys()).filter(function(k){ return !prefix || k.indexOf(prefix) === 0; });
+  }
+  async function getJSON(key, fallback){
+    const raw = await get(key);
+    if(raw == null) return fallback;
+    return safeJSONParse(raw, fallback);
+  }
+  async function setJSON(key, value){ return set(key, JSON.stringify(value)); }
+
+  return { hasClaude: hasClaude, hasLocal: hasLocal, name: backendName, get: get, set: set, del: del, list: list, getJSON: getJSON, setJSON: setJSON };
+})();
+
+/* ---------------- constants ---------------- */
+const OS_VERSION = '1.0.0';
+const SYSTEM_APPS = [
+  { id:'store', name:'機能ストア', icon:'🛒', color:'#b6633f', system:true, description:'アプリの追加・削除・管理' },
+  { id:'settings', name:'設定', icon:'⚙️', color:'#7d7565', system:true, description:'外観・レイアウト・ストレージ' }
+];
+const BUILTIN_CATALOG = [
+  { id:'notes', name:'メモ', icon:'📝', color:'#c4963a', templateId:'tpl-app-notes', version:'1.0.0', description:'シンプルなメモ帳（GUIOS.storage 使用例）' },
+  { id:'calculator', name:'電卓', icon:'🔢', color:'#3f7f8a', templateId:'tpl-app-calculator', version:'1.0.0', description:'四則演算に対応した電卓' },
+  { id:'clock', name:'時計', icon:'⏱️', color:'#c4643a', templateId:'tpl-app-clock', version:'1.0.0', description:'時計・ストップウォッチ・タイマー' },
+  { id:'paint', name:'お絵かき', icon:'🎨', color:'#8672a6', templateId:'tpl-app-paint', version:'1.0.0', description:'Canvas を使ったお絵かきアプリ' },
+  { id:'wallpaper', name:'壁紙', icon:'🖼️', color:'#5b8fd9', templateId:'tpl-app-wallpaper', version:'1.0.0', description:'ホーム画面の壁紙を変更（GUIOS.wallpaper 使用例）' }
+];
+const DEFAULT_INSTALLED = ['notes', 'calculator'];
+const WALLPAPERS = [
+  { id:'graphite', name:'グラファイト', css:'radial-gradient(circle at 30% 0%, var(--bg-2), var(--bg-0) 62%)' },
+  { id:'brass', name:'ブラス', css:'radial-gradient(circle at 75% 0%, color-mix(in srgb, var(--accent) 20%, var(--bg-1)), var(--bg-0) 65%)' },
+  { id:'dusk', name:'ダスク', css:'radial-gradient(circle at 50% 105%, var(--bg-3), var(--bg-0) 60%)' },
+  { id:'plain', name:'プレーン', css:'var(--bg-0)' },
+  { id:'custom', name:'カスタム', css:'' }
+];
+
+/* ---------------- settings ---------------- */
+const Settings = (function(){
+  const DEFAULTS = { theme:'dark', accent:'', wallpaper:'graphite', customWallpaper:'#b6791e', deviceMode:'auto', dockSide:'bottom', reduceMotion:false, lockEnabled:false };
+  let current = Object.assign({}, DEFAULTS);
+
+  async function load(){
+    const saved = await StorageBackend.getJSON('os:settings', null);
+    current = Object.assign({}, DEFAULTS, saved || {});
+    apply();
+  }
+  async function save(){ await StorageBackend.setJSON('os:settings', current); }
+  function get(){ return current; }
+  async function update(patch){
+    Object.assign(current, patch || {});
+    apply();
+    await save();
+  }
+  function resolvedTheme(){
+    if(current.theme !== 'auto') return current.theme;
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  function resolveDeviceMode(){
+    if(current.deviceMode === 'mobile' || current.deviceMode === 'desktop') return current.deviceMode;
+    const hasFinePointer = !!(window.matchMedia && window.matchMedia('(pointer: fine)').matches);
+    const isWide = window.innerWidth >= 820;
+    return (hasFinePointer || isWide) ? 'desktop' : 'mobile';
+  }
+  function apply(){
+    const html = document.documentElement;
+    html.setAttribute('data-theme', resolvedTheme());
+    html.setAttribute('data-mode', resolveDeviceMode());
+    html.setAttribute('data-reduce-motion', current.reduceMotion ? '1' : '0');
+    if(current.accent){ html.style.setProperty('--accent', current.accent); html.style.setProperty('--accent-strong', current.accent); }
+    else{ html.style.removeProperty('--accent'); html.style.removeProperty('--accent-strong'); }
+    const wp = WALLPAPERS.find(function(w){ return w.id === current.wallpaper; });
+    let bg = wp ? wp.css : WALLPAPERS[0].css;
+    if(current.wallpaper === 'custom'){ bg = 'radial-gradient(circle at 60% 0%, ' + (current.customWallpaper || '#b6791e') + '33, var(--bg-0) 65%)'; }
+    document.body.style.background = bg;
+    document.body.style.backgroundColor = 'var(--bg-0)';
+    const dw = $('dock-wrap'); if(dw) dw.dataset.side = current.dockSide || 'bottom';
+    document.documentElement.style.colorScheme = resolvedTheme();
+  }
+  return { DEFAULTS: DEFAULTS, load: load, save: save, get: get, update: update, apply: apply, resolvedTheme: resolvedTheme, resolveDeviceMode: resolveDeviceMode };
+})();
+</script>
+
+<script>
+/* ---------------- app registry (installed apps index + code) ---------------- */
+const AppRegistry = (function(){
+  let index = [];
+
+  function findSystemMeta(id){ return SYSTEM_APPS.find(function(a){ return a.id === id; }); }
+  function getMeta(id){ return index.find(function(a){ return a.id === id; }) || findSystemMeta(id); }
+  function listInstalled(){ return index.slice(); }
+  function isInstalled(id){ return index.some(function(a){ return a.id === id; }); }
+  function isBuiltinAvailable(id){ return BUILTIN_CATALOG.some(function(a){ return a.id === id; }); }
+
+  async function loadIndex(){
+    const saved = await StorageBackend.getJSON('os:apps:index', null);
+    if(Array.isArray(saved) && saved.length){
+      index = saved;
+      let changed = false;
+      SYSTEM_APPS.forEach(function(sa){
+        if(!index.some(function(a){ return a.id === sa.id; })){
+          index.unshift(Object.assign({}, sa, { installedAt: Date.now() }));
+          changed = true;
+        }
+      });
+      if(changed) await saveIndex();
+      return;
+    }
+    index = [];
+    SYSTEM_APPS.forEach(function(a){ index.push(Object.assign({}, a, { installedAt: Date.now() })); });
+    DEFAULT_INSTALLED.forEach(function(id){
+      const b = BUILTIN_CATALOG.find(function(x){ return x.id === id; });
+      if(b) index.push({ id:b.id, name:b.name, icon:b.icon, color:b.color, version:b.version, author:'GUIOS', description:b.description, builtin:true, installedAt:Date.now() });
+    });
+    await saveIndex();
+  }
+  async function saveIndex(){ await StorageBackend.setJSON('os:apps:index', index); }
+
+  function getBuiltinCode(id){
+    const cat = BUILTIN_CATALOG.find(function(x){ return x.id === id; });
+    if(!cat) return '';
+    const t = document.getElementById(cat.templateId);
+    return t ? t.innerHTML : '';
+  }
+  async function getCode(id){
+    const meta = getMeta(id);
+    if(meta && meta.builtin) return getBuiltinCode(id);
+    if(meta && meta.system) return '';
+    return (await StorageBackend.get('os:apps:code:' + id)) || '';
+  }
+
+  function parseManifest(html){
+    const m = String(html || '').match(/^\s*<!--\s*GUIOS-APP\s*([\s\S]*?)-->/);
+    if(!m) return null;
+    return safeJSONParse(m[1], null);
+  }
+
+  function uniqueId(base){
+    let id = slugify(base);
+    if(!isInstalled(id) && !findSystemMeta(id)) return id;
+    return id + '-' + Math.random().toString(36).slice(2, 6);
+  }
+
+  async function installFromCode(html, overrides){
+    overrides = overrides || {};
+    const parsed = parseManifest(html) || {};
+    const id = uniqueId(overrides.id || parsed.id || overrides.name || parsed.name || 'app');
+    const meta = {
+      id: id,
+      name: String(overrides.name || parsed.name || 'アプリ').slice(0, 40),
+      icon: overrides.icon || parsed.icon || '🧩',
+      color: overrides.color || parsed.color || '#7d7565',
+      version: parsed.version || '1.0.0',
+      author: parsed.author || '不明',
+      description: String(overrides.description || parsed.description || '').slice(0, 140),
+      builtin: false,
+      installedAt: Date.now(),
+      size: bytesOf(html)
+    };
+    await StorageBackend.set('os:apps:code:' + id, html);
+    index.push(meta);
+    await saveIndex();
+    return meta;
+  }
+
+  async function installBuiltin(id){
+    if(isInstalled(id)) return getMeta(id);
+    const b = BUILTIN_CATALOG.find(function(x){ return x.id === id; });
+    if(!b) return null;
+    const meta = { id:b.id, name:b.name, icon:b.icon, color:b.color, version:b.version, author:'GUIOS', description:b.description, builtin:true, installedAt:Date.now() };
+    index.push(meta);
+    await saveIndex();
+    return meta;
+  }
+
+  async function uninstall(id){
+    const meta = getMeta(id);
+    if(!meta || meta.system) return false;
+    index = index.filter(function(a){ return a.id !== id; });
+    await saveIndex();
+    if(!meta.builtin){ await StorageBackend.del('os:apps:code:' + id); }
+    const dataKeys = await StorageBackend.list('os:appdata:' + id + ':');
+    for(let i = 0; i < dataKeys.length; i++){ await StorageBackend.del(dataKeys[i]); }
+    return true;
+  }
+
+  async function estimateSize(id){
+    const meta = getMeta(id);
+    if(!meta) return 0;
+    if(meta.builtin) return bytesOf(getBuiltinCode(id));
+    if(meta.size) return meta.size;
+    return bytesOf(await getCode(id));
+  }
+
+  return {
+    loadIndex: loadIndex, saveIndex: saveIndex, listInstalled: listInstalled, getMeta: getMeta,
+    isInstalled: isInstalled, isBuiltinAvailable: isBuiltinAvailable, getCode: getCode, getBuiltinCode: getBuiltinCode,
+    parseManifest: parseManifest, installFromCode: installFromCode, installBuiltin: installBuiltin,
+    uninstall: uninstall, estimateSize: estimateSize
+  };
+})();
+</script>
+
+<script>
+/* ---------------- window manager ----------------
+   Unified pointer-events drag/resize (mouse+touch+pen alike).
+   Desktop mode: floating, draggable, resizable, edge-snap windows.
+   Mobile mode: fullscreen windows; "minimize" = suspend to home
+   (iframe keeps running so app state survives), title-bar button
+   quits back to the desktop icon grid.
+------------------------------------------------------------- */
+const WindowManager = (function(){
+  let wins = [];
+  let zTop = 100;
+  let cascadeN = 0;
+  let focusedId = null;
+  let dragCtx = null;
+  let resizeCtx = null;
+  let snapZone = null;
+
+  function layer(){ return $('window-layer'); }
+  function byId(id){ return wins.find(function(w){ return w.id === id; }); }
+  function byAppId(id){ return wins.find(function(w){ return w.appId === id; }); }
+  function byIframeWindow(win){ return wins.find(function(w){ return w.iframeEl && w.iframeEl.contentWindow === win; }); }
+  function all(){ return wins.slice(); }
+  function focused(){ return wins.find(function(w){ return w.id === focusedId; }) || null; }
+  function isMobile(){ return document.documentElement.getAttribute('data-mode') === 'mobile'; }
+
+  function canvasRect(){
+    const c = $('desktop-canvas');
+    return c ? c.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+  }
+
+  function defaultRect(w, h){
+    const cr = canvasRect();
+    w = Math.min(w, Math.max(280, cr.width - 40));
+    h = Math.min(h, Math.max(200, cr.height - 40));
+    cascadeN = (cascadeN + 1) % 8;
+    const x = clamp(40 + cascadeN * 26, 0, Math.max(0, cr.width - w));
+    const y = clamp(24 + cascadeN * 22, 0, Math.max(0, cr.height - h));
+    return { x: x, y: y, w: w, h: h };
+  }
+
+  function create(opts){
+    const existing = !opts.allowMultiple && byAppId(opts.appId);
+    if(existing){ focus(existing.id); return existing; }
+
+    const id = uid('win');
+    const el = document.createElement('div');
+    el.className = 'win';
+    el.dataset.winId = id;
+    const rect = opts.savedRect || defaultRect(opts.width || 640, opts.height || 440);
+
+    el.innerHTML =
+      '<div class="win-titlebar">' +
+        '<div class="win-btns">' +
+          '<div class="win-btn close" data-act="close" title="閉じる"></div>' +
+          '<div class="win-btn min" data-act="min" title="最小化"></div>' +
+          '<div class="win-btn max" data-act="max" title="最大化"></div>' +
+        '</div>' +
+        '<div class="win-title"><span class="ttext"></span></div>' +
+        '<div class="win-close-mobile" data-act="min">⌄</div>' +
+      '</div>' +
+      '<div class="win-body"></div>' +
+      '<div class="win-resize rs-n" data-edge="n"></div><div class="win-resize rs-s" data-edge="s"></div>' +
+      '<div class="win-resize rs-e" data-edge="e"></div><div class="win-resize rs-w" data-edge="w"></div>' +
+      '<div class="win-resize rs-se" data-edge="se"></div><div class="win-resize rs-sw" data-edge="sw"></div>';
+
+    el.querySelector('.ttext').textContent = opts.title || '';
+    el.querySelector('.win-body').appendChild(opts.contentEl);
+    layer().appendChild(el);
+
+    const win = {
+      id: id, appId: opts.appId, el: el, system: !!opts.system,
+      iframeEl: (opts.contentEl && opts.contentEl.tagName === 'IFRAME') ? opts.contentEl : null,
+      title: opts.title || '', icon: opts.icon || '', state: 'normal', rect: rect, preMaxRect: null
+    };
+    wins.push(win);
+    applyRect(win);
+    bindWindowEvents(win);
+    focus(id);
+    return win;
+  }
+
+  function applyRect(w){
+    w.el.style.left = w.rect.x + 'px';
+    w.el.style.top = w.rect.y + 'px';
+    w.el.style.width = w.rect.w + 'px';
+    w.el.style.height = w.rect.h + 'px';
+  }
+
+  function bindWindowEvents(w){
+    const titlebar = w.el.querySelector('.win-titlebar');
+    w.el.addEventListener('pointerdown', function(){ focus(w.id); });
+    titlebar.addEventListener('pointerdown', function(e){
+      if(isMobile() || w.state === 'maximized') return;
+      if(e.target.closest('[data-act]')) return;
+      focus(w.id);
+      dragCtx = { winId: w.id, startX: e.clientX, startY: e.clientY, origX: w.rect.x, origY: w.rect.y };
+      w.el.classList.add('dragging');
+      try{ titlebar.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    titlebar.addEventListener('dblclick', function(e){
+      if(isMobile() || e.target.closest('[data-act]')) return;
+      toggleMaximize(w.id);
+    });
+    qsa('.win-resize', w.el).forEach(function(handle){
+      handle.addEventListener('pointerdown', function(e){
+        if(isMobile() || w.state === 'maximized') return;
+        e.stopPropagation();
+        focus(w.id);
+        resizeCtx = { winId: w.id, edge: handle.dataset.edge, startX: e.clientX, startY: e.clientY, orig: Object.assign({}, w.rect) };
+        w.el.classList.add('resizing');
+        try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+      });
+    });
+    qsa('[data-act]', w.el).forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        const act = btn.dataset.act;
+        if(act === 'close') close(w.id);
+        else if(act === 'min') toggleMinimize(w.id);
+        else if(act === 'max') toggleMaximize(w.id);
+      });
+    });
+  }
+
+  function onPointerMove(e){
+    if(dragCtx){
+      const w = byId(dragCtx.winId); if(!w) return;
+      const cr = canvasRect();
+      let nx = dragCtx.origX + (e.clientX - dragCtx.startX);
+      let ny = dragCtx.origY + (e.clientY - dragCtx.startY);
+      nx = clamp(nx, -w.rect.w + 90, cr.width - 90);
+      ny = clamp(ny, 0, cr.height - 32);
+      w.rect.x = nx; w.rect.y = ny;
+      w.el.style.left = nx + 'px'; w.el.style.top = ny + 'px';
+      const edge = 26;
+      if(e.clientX <= edge) snapZone = 'left';
+      else if(e.clientX >= cr.width - edge) snapZone = 'right';
+      else if(e.clientY <= edge) snapZone = 'top';
+      else snapZone = null;
+    } else if(resizeCtx){
+      const w = byId(resizeCtx.winId); if(!w) return;
+      const cr = canvasRect();
+      const dx = e.clientX - resizeCtx.startX, dy = e.clientY - resizeCtx.startY;
+      const o = resizeCtx.orig, edge = resizeCtx.edge;
+      const r = Object.assign({}, w.rect);
+      if(edge.indexOf('e') !== -1) r.w = clamp(o.w + dx, 300, cr.width - r.x);
+      if(edge.indexOf('s') !== -1) r.h = clamp(o.h + dy, 200, cr.height - r.y);
+      if(edge.indexOf('w') !== -1){ const nw = clamp(o.w - dx, 300, o.x + o.w); r.x = o.x + o.w - nw; r.w = nw; }
+      if(edge.indexOf('n') !== -1){ const nh = clamp(o.h - dy, 200, o.y + o.h); r.y = o.y + o.h - nh; r.h = nh; }
+      w.rect = r;
+      applyRect(w);
+    }
+  }
+  function onPointerUp(){
+    if(dragCtx){
+      const w = byId(dragCtx.winId);
+      if(w){
+        w.el.classList.remove('dragging');
+        if(snapZone) commitSnap(w, snapZone);
+        persistGeometry(w);
+      }
+      snapZone = null; dragCtx = null;
+    }
+    if(resizeCtx){
+      const w = byId(resizeCtx.winId);
+      if(w){ w.el.classList.remove('resizing'); persistGeometry(w); }
+      resizeCtx = null;
+    }
+  }
+  document.addEventListener('pointermove', onPointerMove);
+  document.addEventListener('pointerup', onPointerUp);
+  document.addEventListener('pointercancel', onPointerUp);
+
+  function commitSnap(w, zone){
+    const cr = canvasRect();
+    if(zone === 'left') w.rect = { x:0, y:0, w:Math.round(cr.width/2), h:cr.height };
+    else if(zone === 'right') w.rect = { x:Math.round(cr.width/2), y:0, w:Math.round(cr.width/2), h:cr.height };
+    else if(zone === 'top') w.rect = { x:0, y:0, w:cr.width, h:cr.height };
+    applyRect(w);
+  }
+
+  function focus(id){
+    const w = byId(id); if(!w) return;
+    focusedId = id;
+    w.el.style.zIndex = String(++zTop);
+    wins.forEach(function(x){ x.el.classList.toggle('focused', x.id === id); });
+    if(w.state === 'minimized'){ w.state = 'normal'; w.el.classList.remove('minimized'); }
+    updateDockRunningState();
+    updateTopbarTitle();
+    try{ if(w.iframeEl && w.iframeEl.contentWindow) w.iframeEl.contentWindow.focus(); }catch(e){}
+  }
+
+  function close(id){
+    const w = byId(id); if(!w) return;
+    persistGeometry(w);
+    w.el.style.transition = 'opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease)';
+    w.el.style.opacity = '0'; w.el.style.transform = 'scale(.94)';
+    setTimeout(function(){ if(w.el.parentNode) w.el.parentNode.removeChild(w.el); }, 160);
+    wins = wins.filter(function(x){ return x.id !== id; });
+    if(focusedId === id){
+      focusedId = null;
+      const rest = wins[wins.length - 1];
+      if(rest) focus(rest.id); else updateTopbarTitle();
+    }
+    updateDockRunningState();
+  }
+
+  function toggleMinimize(id){
+    const w = byId(id); if(!w) return;
+    w.state = (w.state === 'minimized') ? 'normal' : 'minimized';
+    w.el.classList.toggle('minimized', w.state === 'minimized');
+    if(w.state === 'minimized' && focusedId === id){
+      focusedId = null;
+      const rest = wins.filter(function(x){ return x.id !== id && x.state !== 'minimized'; }).pop();
+      if(rest) focus(rest.id); else updateTopbarTitle();
+    } else if(w.state === 'normal'){
+      focus(id);
+    }
+  }
+  function toggleMaximize(id){
+    const w = byId(id); if(!w) return;
+    if(w.state === 'maximized'){
+      w.state = 'normal';
+      w.el.classList.remove('maximized');
+      w.rect = w.preMaxRect || defaultRect(640, 440);
+      applyRect(w);
+    } else {
+      w.preMaxRect = Object.assign({}, w.rect);
+      w.state = 'maximized';
+      w.el.classList.add('maximized');
+      const cr = canvasRect();
+      w.rect = { x:0, y:0, w:cr.width, h:cr.height };
+      applyRect(w);
+    }
+  }
+
+  function persistGeometry(w){
+    if(w.system) return;
+    StorageBackend.setJSON('os:wingeo:' + w.appId, w.rect).catch(function(){});
+  }
+  async function loadGeometry(appId){ return await StorageBackend.getJSON('os:wingeo:' + appId, null); }
+
+  function updateDockRunningState(){
+    qsa('.dock-btn[data-app-id]').forEach(function(btn){
+      btn.classList.toggle('running', wins.some(function(w){ return w.appId === btn.dataset.appId; }));
+    });
+  }
+  function updateTopbarTitle(){
+    const w = focused();
+    const el = $('topbar-appname');
+    if(el) el.textContent = w ? w.title : 'ホーム';
+  }
+  function closeAllForApp(appId){
+    wins.filter(function(w){ return w.appId === appId; }).forEach(function(w){ close(w.id); });
+  }
+  function relayoutForModeChange(){
+    if(document.documentElement.getAttribute('data-mode') === 'desktop'){
+      wins.forEach(function(w){ if(w.state !== 'maximized') applyRect(w); });
+    }
+  }
+
+  return {
+    create: create, focus: focus, close: close, toggleMinimize: toggleMinimize, toggleMaximize: toggleMaximize,
+    byId: byId, byAppId: byAppId, byIframeWindow: byIframeWindow, all: all, focused: focused,
+    loadGeometry: loadGeometry, updateDockRunningState: updateDockRunningState, closeAllForApp: closeAllForApp,
+    relayoutForModeChange: relayoutForModeChange
+  };
+})();
+</script>
+
+<script>
+/* ---------------- sandbox bridge ----------------
+   Every non-system app runs in an iframe with sandbox="allow-scripts
+   allow-forms allow-modals allow-popups" and NO allow-same-origin, so
+   it gets a unique opaque origin: it cannot reach this parent
+   document, and a crash or infinite loop inside it fires only that
+   iframe's own error handling, never the shell's. The only channel
+   in or out is postMessage, wrapped below as window.GUIOS.
+------------------------------------------------------------- */
+function currentPlatformInfo(){
+  return {
+    mode: document.documentElement.getAttribute('data-mode'),
+    theme: Settings.resolvedTheme(),
+    isTouch: !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+  };
+}
+
+function buildAppBootstrap(meta){
+  const appInfo = { id: meta.id, name: meta.name, version: meta.version || '1.0.0' };
+  const platform = currentPlatformInfo();
+  return `<script>
+(function(){
+  var APP_INFO = ${JSON.stringify(appInfo)};
+  var PLATFORM = ${JSON.stringify(platform)};
+  var _reqId = 0; var _pending = {};
+  window.addEventListener('message', function(e){
+    if(!e.data || e.data.guios !== true || typeof e.data.reqId === 'undefined') return;
+    var p = _pending[e.data.reqId]; if(!p) return; delete _pending[e.data.reqId];
+    if(e.data.error){ p.reject(new Error(e.data.error)); } else { p.resolve(e.data.result); }
+  });
+  function call(action, payload){
+    return new Promise(function(resolve, reject){
+      var reqId = ++_reqId; _pending[reqId] = { resolve: resolve, reject: reject };
+      parent.postMessage({ guios:true, appId: APP_INFO.id, reqId: reqId, action: action, payload: payload }, '*');
+      setTimeout(function(){ if(_pending[reqId]){ delete _pending[reqId]; reject(new Error('timeout')); } }, 8000);
+    });
+  }
+  window.GUIOS = {
+    app: APP_INFO, platform: PLATFORM,
+    storage: {
+      get: function(key){ return call('storage:get',{key:key}).then(function(v){ if(v==null) return null; try{ return JSON.parse(v); }catch(e){ return v; } }); },
+      set: function(key, value){ var v = (typeof value === 'string') ? value : JSON.stringify(value); return call('storage:set',{key:key, value:v}); },
+      delete: function(key){ return call('storage:delete',{key:key}); },
+      list: function(prefix){ return call('storage:list',{prefix:prefix||''}); }
+    },
+    notify: function(message, opts){ return call('notify',{message:message, opts:opts||{}}); },
+    setTitle: function(title){ return call('setTitle',{title:title}); },
+    close: function(){ return call('close',{}); },
+    minimize: function(){ return call('minimize',{}); },
+    openApp: function(id){ return call('openApp',{id:id}); },
+    share: function(text){ return call('share',{text:text}); },
+    clipboard: { writeText: function(text){ return call('clipboard:write',{text:text}); } },
+    haptic: function(){ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} },
+    wallpaper: {
+      list: function(){ return call('wallpaper:list', {}); },
+      set: function(opts){ return call('wallpaper:set', opts || {}); }
+    }
+  };
+  try{ window.localStorage; window.localStorage.getItem('__t__'); }catch(e){
+    var _ls = new Map();
+    var shim = {
+      getItem: function(k){ return _ls.has(k) ? _ls.get(k) : null; },
+      setItem: function(k, v){ _ls.set(k, String(v)); },
+      removeItem: function(k){ _ls.delete(k); },
+      clear: function(){ _ls.clear(); },
+      key: function(i){ return Array.from(_ls.keys())[i] || null; }
+    };
+    Object.defineProperty(shim, 'length', { get: function(){ return _ls.size; } });
+    try{ Object.defineProperty(window, 'localStorage', { value: shim, configurable: true }); }catch(e2){}
+    try{ Object.defineProperty(window, 'sessionStorage', { value: shim, configurable: true }); }catch(e3){}
+  }
+})();
+<\/script>
+`;
+}
+
+/* parent-side handler: services requests from every app iframe */
+window.addEventListener('message', async function(e){
+  const data = e.data;
+  if(!data || data.guios !== true || typeof data.reqId === 'undefined') return;
+  const win = WindowManager.byIframeWindow(e.source);
+  if(!win) return;
+  const appId = win.appId;
+  function reply(result, error){
+    try{ e.source.postMessage({ guios:true, reqId: data.reqId, result: result, error: error }, '*'); }catch(err){}
+  }
+  try{
+    const action = data.action, payload = data.payload || {};
+    const nsPrefix = 'os:appdata:' + appId + ':';
+    if(action === 'storage:get'){
+      reply(await StorageBackend.get(nsPrefix + String(payload.key || '')));
+    } else if(action === 'storage:set'){
+      await StorageBackend.set(nsPrefix + String(payload.key || ''), String(payload.value));
+      reply(true);
+    } else if(action === 'storage:delete'){
+      await StorageBackend.del(nsPrefix + String(payload.key || ''));
+      reply(true);
+    } else if(action === 'storage:list'){
+      const keys = await StorageBackend.list(nsPrefix + String(payload.prefix || ''));
+      reply(keys.map(function(k){ return k.slice(nsPrefix.length); }));
+    } else if(action === 'notify'){
+      const meta = AppRegistry.getMeta(appId);
+      showToast({ title: (meta && meta.name) || appId, body: String(payload.message || ''), icon: (meta && meta.icon) || '🔔', type: (payload.opts && payload.opts.type) || 'info' });
+      reply(true);
+    } else if(action === 'setTitle'){
+      win.title = String(payload.title || win.title).slice(0, 60);
+      const t = win.el.querySelector('.ttext'); if(t) t.textContent = win.title;
+      WindowManager.updateDockRunningState();
+      const f = WindowManager.focused();
+      if(f && f.id === win.id){ const el = $('topbar-appname'); if(el) el.textContent = win.title; }
+      reply(true);
+    } else if(action === 'close'){
+      WindowManager.close(win.id); reply(true);
+    } else if(action === 'minimize'){
+      WindowManager.toggleMinimize(win.id); reply(true);
+    } else if(action === 'openApp'){
+      await launchApp(String(payload.id || '')); reply(true);
+    } else if(action === 'share'){
+      let ok = false;
+      try{
+        if(navigator.share){ await navigator.share({ text: String(payload.text || '') }); ok = true; }
+        else if(navigator.clipboard){ await navigator.clipboard.writeText(String(payload.text || '')); ok = true; }
+      }catch(err){}
+      reply(ok);
+    } else if(action === 'clipboard:write'){
+      let ok = false;
+      try{ if(navigator.clipboard){ await navigator.clipboard.writeText(String(payload.text || '')); ok = true; } }catch(err){}
+      reply(ok);
+    } else if(action === 'wallpaper:list'){
+      const cur = Settings.get();
+      reply({
+        wallpapers: WALLPAPERS.map(function(w){ return { id: w.id, name: w.name }; }),
+        current: { wallpaper: cur.wallpaper, customWallpaper: cur.customWallpaper }
+      });
+    } else if(action === 'wallpaper:set'){
+      const patch = {};
+      if(payload.id) patch.wallpaper = String(payload.id).slice(0, 30);
+      if(payload.customColor) patch.customWallpaper = String(payload.customColor).slice(0, 20);
+      await Settings.update(patch);
+      reply(true);
+    } else if(action === 'appError'){
+      reply(true);
+    } else {
+      reply(null, 'unknown action: ' + action);
+    }
+  }catch(err){
+    reply(null, (err && err.message) || 'internal error');
+  }
+});
+
+/* ---------------- app launch orchestration ---------------- */
+async function launchApp(appId){
+  const meta = AppRegistry.getMeta(appId);
+  if(!meta){ showToast({ title:'エラー', body:'アプリが見つかりません', icon:'⚠️', type:'error' }); return; }
+  const existing = WindowManager.byAppId(appId);
+  if(existing){ WindowManager.focus(existing.id); return; }
+
+  let contentEl;
+  if(meta.system){
+    contentEl = document.createElement('div');
+    contentEl.className = 'sysapp-content';
+    if(appId === 'store') renderStoreApp(contentEl);
+    else if(appId === 'settings') renderSettingsApp(contentEl);
+    else contentEl.innerHTML = '<div class="empty-hint">未実装のシステムアプリです</div>';
+  } else {
+    let code = '';
+    try{ code = await AppRegistry.getCode(appId); }catch(err){}
+    contentEl = document.createElement('iframe');
+    contentEl.className = 'app-frame';
+    contentEl.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox');
+    contentEl.srcdoc = buildAppBootstrap(meta) + code;
+  }
+  let savedRect = null;
+  if(!meta.system){ try{ savedRect = await WindowManager.loadGeometry(appId); }catch(err){} }
+  WindowManager.create({ appId: appId, title: meta.name, icon: meta.icon, system: !!meta.system, contentEl: contentEl, savedRect: savedRect, width: 640, height: 460 });
+}
+</script>
+
+<script>
+/* ---------------- toasts ---------------- */
+let toastSeq = 0;
+function showToast(opts){
+  const area = $('toast-area'); if(!area) return;
+  const id = 'toast_' + (++toastSeq);
+  const el = document.createElement('div');
+  el.className = 'toast' + (opts.type === 'error' ? ' error' : '');
+  el.id = id;
+  el.innerHTML = '<span class="toast-ic"></span><div><div class="toast-title"></div><div class="toast-body"></div></div>';
+  el.querySelector('.toast-ic').textContent = opts.icon || (opts.type === 'error' ? '⚠️' : (opts.type === 'success' ? '✅' : 'ℹ️'));
+  el.querySelector('.toast-title').textContent = opts.title || '';
+  el.querySelector('.toast-body').textContent = opts.body || '';
+  el.addEventListener('click', function(){ dismissToast(id); });
+  area.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){ dismissToast(id); }, opts.duration || 4200);
+  const open = qsa('.toast', area);
+  if(open.length > 4) dismissToast(open[0].id);
+}
+function dismissToast(id){
+  const el = $(id); if(!el) return;
+  el.classList.remove('show');
+  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 260);
+}
+
+/* ---------------- modal ---------------- */
+function showModal(html, onMount){
+  const root = $('modal-root'), card = $('modal-card');
+  card.innerHTML = html;
+  root.classList.remove('hidden');
+  if(onMount) onMount(card);
+}
+function hideModal(){ $('modal-root').classList.add('hidden'); $('modal-card').innerHTML = ''; }
+$('modal-backdrop').addEventListener('click', hideModal);
+
+function confirmDialog(opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    showModal(
+      '<div class="modal-title"></div><div class="modal-sub"></div>' +
+      '<div class="modal-actions"><button class="btn secondary" id="mdCancel"></button>' +
+      '<button class="btn ' + (opts.danger ? 'danger' : '') + '" id="mdOk"></button></div>',
+      function(card){
+        card.querySelector('.modal-title').textContent = opts.title || '確認';
+        card.querySelector('.modal-sub').textContent = opts.body || '';
+        card.querySelector('#mdCancel').textContent = opts.cancelLabel || 'キャンセル';
+        card.querySelector('#mdOk').textContent = opts.okLabel || 'OK';
+        card.querySelector('#mdCancel').onclick = function(){ hideModal(); resolve(false); };
+        card.querySelector('#mdOk').onclick = function(){ hideModal(); resolve(true); };
+      }
+    );
+  });
+}
+
+/* ---------------- context menu ---------------- */
+function showContextMenu(x, y, items){
+  const menu = $('ctxmenu');
+  menu.innerHTML = '';
+  items.forEach(function(item){
+    if(item.sep){ const s = document.createElement('div'); s.className = 'ctx-sep'; menu.appendChild(s); return; }
+    const d = document.createElement('div');
+    d.className = 'ctx-item' + (item.danger ? ' danger' : '');
+    d.textContent = (item.icon ? item.icon + '  ' : '') + item.label;
+    if(item.disabled) d.setAttribute('disabled', '');
+    d.onclick = function(){ hideContextMenu(); if(item.onSelect) item.onSelect(); };
+    menu.appendChild(d);
+  });
+  menu.classList.remove('hidden');
+  const rect = menu.getBoundingClientRect();
+  const maxX = Math.max(8, window.innerWidth - rect.width - 8);
+  const maxY = Math.max(8, window.innerHeight - rect.height - 8);
+  menu.style.left = clamp(x, 8, maxX) + 'px';
+  menu.style.top = clamp(y, 8, maxY) + 'px';
+}
+function hideContextMenu(){ $('ctxmenu').classList.add('hidden'); }
+document.addEventListener('click', function(e){ if(!e.target.closest('#ctxmenu')) hideContextMenu(); });
+
+/* ---------------- color helper for two-tone icon tiles ---------------- */
+function shade(hex, percent){
+  try{
+    let c = String(hex).replace('#', '');
+    if(c.length === 3) c = c.split('').map(function(x){ return x + x; }).join('');
+    const num = parseInt(c, 16);
+    let r = clamp((num >> 16) + Math.round(255 * (percent / 100)), 0, 255);
+    let g = clamp(((num >> 8) & 0xff) + Math.round(255 * (percent / 100)), 0, 255);
+    let b = clamp((num & 0xff) + Math.round(255 * (percent / 100)), 0, 255);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }catch(e){ return hex; }
+}
+function iconGlyphHTML(app){
+  const bg = app.color || '#7d7565';
+  return '<div class="icon-glyph' + (app.system ? ' system' : '') + '" style="background:linear-gradient(155deg,' + bg + ',' + shade(bg, -18) + ')">' + escapeHtml(app.icon || '🧩') + '</div>';
+}
+
+/* ---------------- desktop icon grid ---------------- */
+function renderDesktop(filter){
+  const grid = $('desktop');
+  const apps = AppRegistry.listInstalled().filter(function(a){
+    return !filter || (a.name || '').toLowerCase().indexOf(String(filter).toLowerCase()) !== -1;
+  });
+  grid.innerHTML = '';
+  if(!apps.length){ grid.innerHTML = '<div class="desktop-empty">該当するアプリがありません</div>'; return; }
+  apps.forEach(function(app){
+    const tile = document.createElement('div');
+    tile.className = 'icon-tile';
+    tile.dataset.appId = app.id;
+    tile.innerHTML = iconGlyphHTML(app) + '<div class="icon-label"></div>';
+    tile.querySelector('.icon-label').textContent = app.name;
+    tile.addEventListener('click', function(){ launchApp(app.id); });
+    tile.addEventListener('contextmenu', function(e){ e.preventDefault(); e.stopPropagation(); showIconContextMenu(e.clientX, e.clientY, app); });
+    grid.appendChild(tile);
+  });
+}
+
+function showIconContextMenu(x, y, app){
+  const running = !!WindowManager.byAppId(app.id);
+  const items = [{ icon:'↗️', label:'開く', onSelect:function(){ launchApp(app.id); } }];
+  if(running) items.push({ icon:'⏹️', label:'終了', onSelect:function(){ WindowManager.closeAllForApp(app.id); } });
+  items.push({ sep:true });
+  items.push({ icon:'ℹ️', label:'情報', onSelect:function(){ showAppInfoModal(app.id); } });
+  if(!app.system) items.push({ icon:'🗑️', label:'アンインストール', danger:true, onSelect:function(){ requestUninstall(app.id); } });
+  showContextMenu(x, y, items);
+}
+
+function showAppInfoModal(appId){
+  const app = AppRegistry.getMeta(appId);
+  if(!app) return;
+  AppRegistry.estimateSize(appId).then(function(size){
+    showModal(
+      '<div style="text-align:center;margin-bottom:14px;"></div>' +
+      '<div class="modal-title" style="text-align:center;"></div>' +
+      '<div class="modal-sub" style="text-align:center;"></div>' +
+      '<div class="card" style="margin-top:14px;font-size:12px;"></div>' +
+      '<div class="modal-actions" style="justify-content:center;"><button class="btn secondary" id="mdClose">閉じる</button></div>',
+      function(card){
+        card.firstElementChild.innerHTML = iconGlyphHTML(app);
+        card.querySelector('.modal-title').textContent = app.name;
+        card.querySelector('.modal-sub').textContent = app.description || '';
+        const info = card.querySelector('.card');
+        info.innerHTML =
+          '<div class="row"><span>バージョン</span><b></b></div>' +
+          '<div class="row"><span>作者</span><b></b></div>' +
+          '<div class="row"><span>種別</span><b></b></div>' +
+          '<div class="row"><span>サイズ</span><b></b></div>';
+        const rows = info.querySelectorAll('.row b');
+        rows[0].textContent = app.version || '1.0.0';
+        rows[1].textContent = app.author || (app.system ? 'GUIOS' : '不明');
+        rows[2].textContent = app.system ? 'システム' : (app.builtin ? '内蔵アプリ' : '追加アプリ');
+        rows[3].textContent = app.system ? '—' : fmtBytes(size);
+        card.querySelector('#mdClose').onclick = hideModal;
+      }
+    );
+  });
+}
+
+async function requestUninstall(appId){
+  const app = AppRegistry.getMeta(appId);
+  if(!app || app.system) return;
+  const ok = await confirmDialog({ title:'アンインストールしますか？', body:'「' + app.name + '」と保存データが削除されます。この操作は取り消せません。', okLabel:'アンインストール', danger:true });
+  if(!ok) return;
+  WindowManager.closeAllForApp(appId);
+  await AppRegistry.uninstall(appId);
+  renderDesktop($('desktop-search').value);
+  renderDock();
+  showToast({ title:'アンインストール完了', body: app.name + ' を削除しました', icon:'🗑️' });
+  if(typeof refreshStoreListIfOpen === 'function') refreshStoreListIfOpen();
+}
+
+/* ---------------- dock ---------------- */
+const DOCK_PINNED_MAX = 6;
+function renderDock(){
+  const dock = $('dock'); if(!dock) return;
+  dock.innerHTML = '';
+  const apps = AppRegistry.listInstalled();
+  const systemApps = apps.filter(function(a){ return a.system; });
+  const regularApps = apps.filter(function(a){ return !a.system; }).slice(0, DOCK_PINNED_MAX);
+  function addBtn(app){
+    const btn = document.createElement('div');
+    btn.className = 'dock-btn';
+    btn.dataset.appId = app.id;
+    btn.title = app.name;
+    const c = app.color || '#7d7565';
+    btn.style.background = 'linear-gradient(155deg,' + c + ',' + shade(c, -18) + ')';
+    btn.innerHTML = escapeHtml(app.icon || '🧩') + '<span class="run-dot"></span>';
+    btn.addEventListener('click', function(){ launchApp(app.id); });
+    btn.addEventListener('contextmenu', function(e){ e.preventDefault(); showIconContextMenu(e.clientX, e.clientY, app); });
+    dock.appendChild(btn);
+  }
+  systemApps.forEach(addBtn);
+  if(systemApps.length && regularApps.length){ const d = document.createElement('div'); d.className = 'dock-divider'; dock.appendChild(d); }
+  regularApps.forEach(addBtn);
+  WindowManager.updateDockRunningState();
+}
+</script>
+
+<script>
+/* ---------------- feature store (機能ストア) ---------------- */
+const SDK_REFERENCE_TEXT =
+'GUIOS SDK クイックリファレンス\n\n' +
+'GUIOS.storage.get(key)          -> Promise<any>\n' +
+'GUIOS.storage.set(key, value)   -> Promise<boolean>\n' +
+'GUIOS.storage.delete(key)       -> Promise<boolean>\n' +
+'GUIOS.storage.list(prefix)      -> Promise<string[]>\n' +
+'GUIOS.notify(message, opts)     -> トースト通知を表示\n' +
+'GUIOS.setTitle(title)           -> ウィンドウタイトルを変更\n' +
+'GUIOS.close()                   -> 自分のウィンドウを閉じる\n' +
+'GUIOS.minimize()                -> 最小化してホームに戻す\n' +
+'GUIOS.openApp(appId)            -> 他の GUIOS アプリを開く\n' +
+'GUIOS.share(text)                -> 共有(未対応時はクリップボードへ)\n' +
+'GUIOS.clipboard.writeText(text) -> クリップボードにコピー\n' +
+'GUIOS.haptic()                  -> 対応端末で軽い振動\n' +
+'GUIOS.app / GUIOS.platform      -> 自分自身とOSの情報\n\n' +
+'保存データはアプリごとに自動で分離されます。\n' +
+'他のアプリの領域を読み書きすることはできません。';
+
+const APP_TEMPLATE_SOURCE = `<!--GUIOS-APP {"id":"my-app","name":"マイアプリ","icon":"🧩","color":"#7d7565","version":"1.0.0","author":"あなた","description":"アプリの説明をここに"}-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif; background:#18140f; color:#f3ead8; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:20px; box-sizing:border-box; }
+  button{ padding:10px 22px; border-radius:10px; border:none; background:#e2a03f; color:#1a1206; font-weight:600; font-size:14px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <h2>マイアプリ</h2>
+  <div id="out">保存された値: (なし)</div>
+  <button id="btn">GUIOS.storage に保存してみる</button>
+<script>
+  // window.GUIOS が SDK です。GUIOS の外(ふつうのブラウザ)で直接開かれた
+  // 場合は存在しないので、必ず有無を確認してから使ってください。
+  var hasSDK = !!(window.GUIOS && window.GUIOS.storage);
+
+  async function loadSaved(){
+    if(!hasSDK) return;
+    var v = await GUIOS.storage.get('count'); // このアプリ専用の領域に自動で分離されます
+    document.getElementById('out').textContent = '保存された値: ' + (v == null ? '(なし)' : v);
+  }
+  document.getElementById('btn').onclick = async function(){
+    var next = (Math.random() * 100) | 0;
+    if(hasSDK){
+      await GUIOS.storage.set('count', next);
+      await GUIOS.notify('保存しました: ' + next, { type:'success' });
+    }
+    document.getElementById('out').textContent = '保存された値: ' + next;
+  };
+  loadSaved();
+
+  /* 主なAPI:
+     GUIOS.storage.get/set/delete/list, GUIOS.notify(message,{type}),
+     GUIOS.setTitle(title), GUIOS.close(), GUIOS.minimize(),
+     GUIOS.openApp(appId), GUIOS.share(text), GUIOS.clipboard.writeText(text),
+     GUIOS.haptic(), GUIOS.app, GUIOS.platform
+     詳しくは機能ストア内の「SDK クイックリファレンス」を参照してください。 */
+<\/script>
+</body>
+</html>
+`;
+
+let _storeContainerRef = null;
+function refreshStoreListIfOpen(){
+  if(_storeContainerRef && document.body.contains(_storeContainerRef)) renderStoreList(_storeContainerRef);
+}
+
+function renderStoreApp(container){
+  _storeContainerRef = container;
+  container.innerHTML =
+    '<div class="app-page">' +
+      '<div class="page-head"><h2>🛒 機能ストア</h2></div>' +
+      '<div class="drop-zone" id="storeDrop">' +
+        '<div class="dz-ic">📄</div>' +
+        '<p>HTML ファイルをドラッグ&ドロップ、またはボタンから選択すると<br>そのままアプリとしてインストールされます。</p>' +
+        '<button class="btn" id="storePickBtn">ファイルから追加</button>' +
+      '</div>' +
+      '<input class="text-input store-search" id="storeSearch" placeholder="アプリを検索">' +
+      '<div id="storeListRoot"></div>' +
+      '<div class="section-title">開発者向け</div>' +
+      '<div class="card template-row">' +
+        '<div style="flex:1"><b style="font-size:12.5px">新規アプリのひな形をダウンロード</b>' +
+        '<div style="font-size:11.5px;color:var(--text-1);margin-top:3px;">SDKの使用例つき。編集してこのストアに追加できます。</div></div>' +
+        '<button class="btn secondary" id="storeTemplateBtn">取得</button>' +
+      '</div>' +
+      '<div class="card" style="margin-top:10px;">' +
+        '<b style="font-size:12.5px;">SDK クイックリファレンス</b>' +
+        '<div class="code-block" style="margin-top:8px;"></div>' +
+      '</div>' +
+    '</div>';
+
+  renderStoreList(container);
+
+  const drop = qs('#storeDrop', container);
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('drag-over'); });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault(); drop.classList.remove('drag-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) handleInstallFile(f);
+  });
+  qs('#storePickBtn', container).addEventListener('click', function(){ $('install-file-input').click(); });
+  qs('#storeSearch', container).addEventListener('input', debounce(function(e){ renderStoreList(container, e.target.value); }, 120));
+  qs('#storeTemplateBtn', container).addEventListener('click', downloadAppTemplate);
+  qs('.code-block', container).textContent = SDK_REFERENCE_TEXT;
+}
+
+function storeCardHTML(meta, kind){
+  const name = escapeHtml(meta.name), desc = escapeHtml(meta.description || '');
+  let actions;
+  if(kind === 'installed'){
+    actions =
+      '<button class="btn" data-store-act="open" data-app-id="' + meta.id + '">開く</button>' +
+      '<button class="btn secondary" data-store-act="source" data-app-id="' + meta.id + '">ソース</button>' +
+      '<button class="btn secondary" data-store-act="info" data-app-id="' + meta.id + '">情報</button>' +
+      (meta.system ? '' : '<button class="btn danger" data-store-act="uninstall" data-app-id="' + meta.id + '">削除</button>');
+  } else {
+    actions = '<button class="btn" data-store-act="install" data-app-id="' + meta.id + '">インストール</button>';
+  }
+  const metaLine = kind === 'installed' ? (meta.system ? 'システム' : (meta.builtin ? '内蔵アプリ' : '追加アプリ・' + fmtBytes(meta.size || 0))) : '内蔵アプリ';
+  return '<div class="app-card">' + iconGlyphHTML(meta) +
+    '<div class="app-card-body"><h4>' + name + ' <span class="pill">v' + escapeHtml(meta.version || '1.0.0') + '</span></h4>' +
+    '<p>' + desc + '</p>' +
+    '<div class="app-card-meta">' + metaLine + '</div>' +
+    '<div class="app-card-actions">' + actions + '</div></div></div>';
+}
+
+function renderStoreList(container, filter){
+  const root = qs('#storeListRoot', container);
+  if(!root) return;
+  const installed = AppRegistry.listInstalled().filter(function(a){ return !a.system; });
+  const availableBuiltins = BUILTIN_CATALOG.filter(function(b){ return !AppRegistry.isInstalled(b.id); });
+  const f = (filter || '').toLowerCase();
+  const matchName = function(n){ return !f || (n || '').toLowerCase().indexOf(f) !== -1; };
+
+  let html = '<div class="section-title">インストール済み (' + installed.length + ')</div>';
+  const filteredInstalled = installed.filter(function(a){ return matchName(a.name); });
+  if(!filteredInstalled.length){ html += '<div class="empty-hint">' + (installed.length ? '一致するアプリがありません' : 'まだアプリがインストールされていません') + '</div>'; }
+  else{ filteredInstalled.forEach(function(a){ html += storeCardHTML(a, 'installed'); }); }
+
+  const filteredAvail = availableBuiltins.filter(function(a){ return matchName(a.name); });
+  if(filteredAvail.length){
+    html += '<div class="section-title">サンプルアプリ（ワンタップで追加）</div>';
+    filteredAvail.forEach(function(a){ html += storeCardHTML(a, 'available'); });
+  }
+  root.innerHTML = html;
+
+  qsa('[data-store-act]', root).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const act = btn.dataset.storeAct, id = btn.dataset.appId;
+      if(act === 'open') launchApp(id);
+      else if(act === 'install') installBuiltinFromStore(id, container);
+      else if(act === 'uninstall') requestUninstall(id).then(function(){ renderStoreList(container, qs('#storeSearch', container).value); });
+      else if(act === 'info') showAppInfoModal(id);
+      else if(act === 'source') showSourceModal(id);
+    });
+  });
+}
+
+async function installBuiltinFromStore(id, container){
+  const meta = await AppRegistry.installBuiltin(id);
+  if(!meta) return;
+  renderDesktop($('desktop-search').value);
+  renderDock();
+  renderStoreList(container, qs('#storeSearch', container).value);
+  showToast({ title:'インストール完了', body: meta.name + ' を追加しました', icon: meta.icon });
+}
+
+$('install-file-input').addEventListener('change', function(e){
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(f) handleInstallFile(f);
+});
+
+async function handleInstallFile(file){
+  if(file.size > 4.5 * 1024 * 1024){ showToast({ title:'ファイルが大きすぎます', body:'5MB未満のファイルを選択してください', type:'error' }); return; }
+  let text = '';
+  try{ text = await file.text(); }catch(e){ showToast({ title:'読み込みエラー', body:'ファイルを読み込めませんでした', type:'error' }); return; }
+  const parsed = AppRegistry.parseManifest(text) || {};
+  const guessName = (file.name || 'app').replace(/\.(html?|txt)$/i, '');
+  showInstallConfirmModal(text, { name: parsed.name || guessName, icon: parsed.icon || '🧩', description: parsed.description || '' });
+}
+
+function showInstallConfirmModal(code, defaults){
+  showModal(
+    '<div class="modal-title">アプリを追加</div>' +
+    '<div class="modal-sub">内容を確認してから追加してください。追加したアプリはサンドボックス化された領域で実行されます。</div>' +
+    '<label class="field-label">アイコン(絵文字)</label><input class="text-input" id="instIcon" maxlength="4" style="margin-bottom:12px;">' +
+    '<label class="field-label">名前</label><input class="text-input" id="instName" maxlength="40" style="margin-bottom:12px;">' +
+    '<label class="field-label">説明</label><input class="text-input" id="instDesc" maxlength="140" style="margin-bottom:4px;">' +
+    '<div style="font-size:11px;color:var(--text-2);margin-top:10px;">サイズ: ' + fmtBytes(bytesOf(code)) + '</div>' +
+    '<div class="modal-actions"><button class="btn secondary" id="instCancel">キャンセル</button><button class="btn" id="instOk">追加する</button></div>',
+    function(card){
+      card.querySelector('#instIcon').value = defaults.icon;
+      card.querySelector('#instName').value = defaults.name;
+      card.querySelector('#instDesc').value = defaults.description;
+      card.querySelector('#instCancel').onclick = hideModal;
+      card.querySelector('#instOk').onclick = async function(){
+        const overrides = {
+          icon: card.querySelector('#instIcon').value.trim() || '🧩',
+          name: card.querySelector('#instName').value.trim() || 'アプリ',
+          description: card.querySelector('#instDesc').value.trim()
+        };
+        hideModal();
+        const meta = await AppRegistry.installFromCode(code, overrides);
+        renderDesktop($('desktop-search').value);
+        renderDock();
+        refreshStoreListIfOpen();
+        showToast({ title:'インストール完了', body: meta.name + ' を追加しました', icon: meta.icon });
+      };
+    }
+  );
+}
+
+function showSourceModal(appId){
+  const meta = AppRegistry.getMeta(appId);
+  AppRegistry.getCode(appId).then(function(code){
+    showModal(
+      '<div class="modal-title"></div><div class="modal-sub">ソースコード（読み取り専用）</div>' +
+      '<div class="code-block" style="max-height:50vh;"></div>' +
+      '<div class="modal-actions"><button class="btn secondary" id="srcClose">閉じる</button></div>',
+      function(card){
+        card.querySelector('.modal-title').textContent = meta ? meta.name : appId;
+        card.querySelector('.code-block').textContent = code || '(ソースを取得できませんでした)';
+        card.querySelector('#srcClose').onclick = hideModal;
+      }
+    );
+  });
+}
+
+function downloadAppTemplate(){
+  const blob = new Blob([APP_TEMPLATE_SOURCE], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'my-app.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+  showToast({ title:'ダウンロード開始', body:'my-app.html を編集して機能ストアから追加してください', icon:'📄' });
+}
+</script>
+
+<script>
+/* ---------------- settings ---------------- */
+const ACCENT_PRESETS = ['#e2a03f', '#5b8fd9', '#6fae6b', '#c4643a', '#8672a6', '#3f9aa6'];
+
+function bindSeg(container, sel, current, onChange){
+  const root = qs(sel, container);
+  qsa('.seg-btn', root).forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.v === current);
+    btn.addEventListener('click', function(){
+      qsa('.seg-btn', root).forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      onChange(btn.dataset.v);
+    });
+  });
+}
+function bindToggle(container, sel, current, onChange){
+  const el = qs(sel, container);
+  el.classList.toggle('on', !!current);
+  el.addEventListener('click', function(){
+    const next = !el.classList.contains('on');
+    el.classList.toggle('on', next);
+    onChange(next);
+  });
+}
+function renderAccentRow(container, s){
+  const row = qs('#accentRow', container);
+  row.innerHTML = '';
+  ACCENT_PRESETS.forEach(function(c){
+    const isActive = s.accent ? (s.accent === c) : (c === ACCENT_PRESETS[0]);
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (isActive ? ' active' : '');
+    sw.style.background = c;
+    sw.addEventListener('click', function(){
+      Settings.update({ accent: c === ACCENT_PRESETS[0] ? '' : c }).then(function(){ renderSettingsApp(container); });
+    });
+    row.appendChild(sw);
+  });
+  const custom = document.createElement('input');
+  custom.type = 'color';
+  custom.value = s.accent || ACCENT_PRESETS[0];
+  custom.style.cssText = 'width:28px;height:28px;border:none;background:none;padding:0;cursor:pointer;';
+  custom.addEventListener('input', function(e){ Settings.update({ accent: e.target.value }); });
+  row.appendChild(custom);
+}
+function renderWallpaperGrid(container, s){
+  const grid = qs('#wpGrid', container);
+  grid.innerHTML = '';
+  WALLPAPERS.forEach(function(wp){
+    const sw = document.createElement('div');
+    sw.className = 'wp-swatch' + (s.wallpaper === wp.id ? ' active' : '');
+    sw.title = wp.name;
+    sw.style.background = wp.id === 'custom' ? 'conic-gradient(from 180deg, #e2a03f, #5b8fd9, #6fae6b, #c4643a, #e2a03f)' : wp.css;
+    sw.addEventListener('click', function(){
+      Settings.update({ wallpaper: wp.id }).then(function(){ renderWallpaperGrid(container, Settings.get()); });
+    });
+    grid.appendChild(sw);
+  });
+}
+
+async function renderStorageList(container){
+  const root = qs('#storageList', container);
+  if(!root) return;
+  root.innerHTML = '<div class="empty-hint">読み込み中…</div>';
+  const apps = AppRegistry.listInstalled();
+  let html = '';
+  for(let i = 0; i < apps.length; i++){
+    const app = apps[i];
+    const size = await AppRegistry.estimateSize(app.id);
+    const dataKeys = await StorageBackend.list('os:appdata:' + app.id + ':');
+    let dataSize = 0;
+    for(let j = 0; j < dataKeys.length; j++){ dataSize += bytesOf((await StorageBackend.get(dataKeys[j])) || ''); }
+    const appTotal = size + dataSize;
+    html += '<div class="row"><span>' + escapeHtml(app.icon || '') + ' ' + escapeHtml(app.name) + '</span>' +
+      '<span style="display:flex;align-items:center;gap:10px;"><b style="font-size:11.5px;font-weight:500;color:var(--text-1);">' + fmtBytes(appTotal) + '</b>' +
+      (dataKeys.length ? '<button class="btn ghost" data-clear-app="' + app.id + '" style="font-size:11px;padding:5px 8px;">データ消去</button>' : '') +
+      '</span></div>';
+  }
+  root.innerHTML = html || '<div class="empty-hint">アプリがありません</div>';
+  qsa('[data-clear-app]', root).forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      const id = btn.dataset.clearApp;
+      const ok = await confirmDialog({ title:'データを消去しますか？', body:'このアプリの保存データのみ削除します（アプリ自体は残ります）。', okLabel:'消去', danger:true });
+      if(!ok) return;
+      const keys = await StorageBackend.list('os:appdata:' + id + ':');
+      for(let k = 0; k < keys.length; k++){ await StorageBackend.del(keys[k]); }
+      renderStorageList(container);
+      showToast({ title:'消去しました', body:'保存データを削除しました', icon:'🗑️' });
+    });
+  });
+}
+
+async function requestFactoryReset(){
+  const ok = await confirmDialog({ title:'OSをリセットしますか？', body:'インストールしたアプリ・設定・保存データがすべて削除されます。この操作は取り消せません。', okLabel:'すべて削除', danger:true });
+  if(!ok) return;
+  const ok2 = await confirmDialog({ title:'本当によろしいですか？', body:'もう一度確認します。元に戻すことはできません。', okLabel:'完全に削除する', danger:true });
+  if(!ok2) return;
+  const allKeys = await StorageBackend.list('os:');
+  for(let i = 0; i < allKeys.length; i++){ await StorageBackend.del(allKeys[i]); }
+  showToast({ title:'リセット完了', body:'再読み込みします…', icon:'🔄' });
+  setTimeout(function(){ location.reload(); }, 900);
+}
+
+function applyDeviceModeSideEffects(){
+  Settings.apply();
+  WindowManager.relayoutForModeChange();
+  renderDock();
+}
+
+function renderSettingsApp(container){
+  const s = Settings.get();
+  container.innerHTML =
+    '<div class="app-page">' +
+      '<div class="page-head"><h2>⚙️ 設定</h2></div>' +
+
+      '<div class="section-title">外観</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>テーマ</span><div class="seg-control" id="segTheme" style="width:210px;">' +
+          '<div class="seg-btn" data-v="dark">ダーク</div><div class="seg-btn" data-v="light">ライト</div><div class="seg-btn" data-v="auto">自動</div>' +
+        '</div></div>' +
+        '<div class="row"><span>アクセントカラー</span><div style="display:flex;gap:8px;align-items:center;" id="accentRow"></div></div>' +
+      '</div>' +
+      '<div class="card" style="margin-top:10px;">' +
+        '<div class="field-label" style="margin-bottom:10px;">壁紙</div>' +
+        '<div class="wallpaper-grid" id="wpGrid"></div>' +
+      '</div>' +
+
+      '<div class="section-title">レイアウト</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>表示モード</span><div class="seg-control" id="segMode" style="width:210px;">' +
+          '<div class="seg-btn" data-v="auto">自動</div><div class="seg-btn" data-v="mobile">モバイル</div><div class="seg-btn" data-v="desktop">デスクトップ</div>' +
+        '</div></div>' +
+        '<div class="row"><span>Dockの位置</span><div class="seg-control" id="segDock" style="width:170px;">' +
+          '<div class="seg-btn" data-v="bottom">下</div><div class="seg-btn" data-v="left">左</div><div class="seg-btn" data-v="right">右</div>' +
+        '</div></div>' +
+        '<div class="row"><span>モーションを減らす</span><div class="toggle-switch" id="tgMotion"></div></div>' +
+        '<div class="row"><span>ロック画面を使う</span><div class="toggle-switch" id="tgLock"></div></div>' +
+      '</div>' +
+
+      '<div class="section-title">ストレージ</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>保存先</span><b id="backendName" style="font-family:var(--font-mono);font-size:11px;"></b></div>' +
+        '<div id="storageList"></div>' +
+      '</div>' +
+      '<button class="btn danger block" id="resetBtn" style="margin-top:10px;">🗑 OSをリセット（全データ削除）</button>' +
+
+      '<div class="section-title">GUIOSについて</div>' +
+      '<div class="card" style="font-size:12px;line-height:1.9;color:var(--text-1);">' +
+        '<div style="font-family:var(--font-mono);font-size:15px;color:var(--text-0);font-weight:700;">GUIOS <span style="color:var(--accent)">v' + OS_VERSION + '</span></div>' +
+        'iPhone・iPad・PC で動く汎用GUIシェル。ファイルを追加するだけで機能を拡張できます。<br>' +
+        'アプリはサンドボックス化された iframe 内で動作し、ウィンドウマネージャ・ストレージ層・機能ストアはこの1枚のHTMLに収められています。' +
+      '</div>' +
+    '</div>';
+
+  bindSeg(container, '#segTheme', s.theme, function(v){ Settings.update({ theme: v }); });
+  renderAccentRow(container, s);
+  renderWallpaperGrid(container, s);
+  bindSeg(container, '#segMode', s.deviceMode, function(v){ Settings.update({ deviceMode: v }).then(applyDeviceModeSideEffects); });
+  bindSeg(container, '#segDock', s.dockSide, function(v){ Settings.update({ dockSide: v }); });
+  bindToggle(container, '#tgMotion', s.reduceMotion, function(v){ Settings.update({ reduceMotion: v }); });
+  bindToggle(container, '#tgLock', s.lockEnabled, function(v){ Settings.update({ lockEnabled: v }); });
+
+  qs('#backendName', container).textContent = StorageBackend.name;
+  renderStorageList(container);
+  qs('#resetBtn', container).addEventListener('click', requestFactoryReset);
+}
+</script>
+
+<script>
+/* ---------------- clocks ---------------- */
+function updateClocks(){
+  const n = new Date();
+  const hh = String(n.getHours()).padStart(2, '0'), mm = String(n.getMinutes()).padStart(2, '0');
+  const tb = $('topbar-clock'); if(tb) tb.textContent = hh + ':' + mm;
+  const lt = $('lock-time'); if(lt) lt.textContent = hh + ':' + mm;
+  const ld = $('lock-date'); if(ld) ld.textContent = n.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' });
+}
+setInterval(updateClocks, 10000);
+
+/* ---------------- lock screen ---------------- */
+function showLockScreen(){
+  const ls = $('lock-screen');
+  ls.classList.remove('hidden-locked');
+  ls.classList.remove('hidden');
+}
+function hideLockScreen(){
+  const ls = $('lock-screen');
+  ls.classList.add('hidden-locked');
+  setTimeout(function(){ ls.classList.add('hidden'); }, 520);
+}
+$('lock-screen').addEventListener('click', hideLockScreen);
+$('topbar-lock-btn').addEventListener('click', function(){
+  if(Settings.get().lockEnabled) showLockScreen();
+  else showToast({ title:'ロック画面は無効です', body:'設定 > レイアウト から有効にできます', icon:'🔒' });
+});
+
+/* ---------------- desktop empty-area context menu ---------------- */
+$('desktop').addEventListener('contextmenu', function(e){
+  if(e.target.closest('.icon-tile')) return;
+  e.preventDefault();
+  showContextMenu(e.clientX, e.clientY, [
+    { icon:'🖼️', label:'壁紙を変更', onSelect:function(){ launchApp('settings'); } },
+    { icon:'🔍', label:'アプリを検索', onSelect:function(){ $('desktop-search').focus(); } },
+    { sep:true },
+    { icon:'⚙️', label:'設定を開く', onSelect:function(){ launchApp('settings'); } }
+  ]);
+});
+$('desktop-search').addEventListener('input', debounce(function(e){ renderDesktop(e.target.value); }, 120));
+
+/* ---------------- window resize -> re-evaluate auto device mode ---------------- */
+window.addEventListener('resize', debounce(function(){
+  if(Settings.get().deviceMode === 'auto'){
+    const before = document.documentElement.getAttribute('data-mode');
+    Settings.apply();
+    if(document.documentElement.getAttribute('data-mode') !== before){ WindowManager.relayoutForModeChange(); renderDock(); }
+  }
+}, 200));
+
+/* ---------------- keyboard shortcuts ---------------- */
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    if(!$('modal-root').classList.contains('hidden')){ hideModal(); return; }
+    if(!$('ctxmenu').classList.contains('hidden')){ hideContextMenu(); return; }
+  }
+  const mod = e.metaKey || e.ctrlKey;
+  if(mod && (e.key === 'w' || e.key === 'W')){
+    const f = WindowManager.focused();
+    if(f && !f.system){ e.preventDefault(); WindowManager.close(f.id); }
+  }
+});
+
+/* ---------------- kernel-level defensive logging (never surfaced as noisy UI) ---------------- */
+window.addEventListener('error', function(e){ console.error('GUIOS kernel error:', e.error || e.message); });
+window.addEventListener('unhandledrejection', function(e){ console.error('GUIOS kernel unhandled rejection:', e.reason); });
+
+/* ---------------- boot sequence ----------------
+   The log lines reflect real state (actual storage backend detected,
+   actual installed-app count) rather than canned text. */
+async function bootLog(text, cls){
+  const log = $('boot-log');
+  const line = document.createElement('div');
+  line.textContent = text;
+  if(cls) line.className = cls;
+  log.appendChild(line);
+  if(log.children.length > 7) log.removeChild(log.firstElementChild);
+  await wait(90);
+}
+async function boot(){
+  try{
+    await bootLog('guios kernel starting…');
+    await bootLog('mounting storage backend… ' + StorageBackend.name, 'tag');
+    await Settings.load();
+    await bootLog('settings loaded (theme=' + Settings.get().theme + ')', 'ok');
+    await AppRegistry.loadIndex();
+    await bootLog('app registry ready — ' + AppRegistry.listInstalled().length + ' package(s)', 'ok');
+    await bootLog('window manager online', 'ok');
+    await bootLog('starting shell…', 'ok');
+    finishBoot();
+  }catch(err){
+    console.error('GUIOS boot error:', err);
+    const em = $('boot-err');
+    em.textContent = '起動中にエラーが発生しました: ' + (err && err.message ? err.message : String(err)) + '。スキップして続行できます。';
+    em.style.display = 'block';
+    $('boot-skip').style.display = 'inline-block';
+  }
+}
+function finishBoot(){
+  $('boot-screen').classList.add('done');
+  $('shell').classList.add('active');
+  renderDesktop();
+  renderDock();
+  updateClocks();
+  if(Settings.get().lockEnabled) showLockScreen();
+}
+$('boot-skip').addEventListener('click', async function(){
+  $('boot-err').style.display = 'none';
+  $('boot-skip').style.display = 'none';
+  try{ await Settings.load(); }catch(e){}
+  try{ await AppRegistry.loadIndex(); }catch(e){}
+  finishBoot();
+});
+
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => console.log('GUIOS SW registered:', reg.scope))
+      .catch((err) => console.error('GUIOS SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
