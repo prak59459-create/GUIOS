@@ -2700,5 +2700,14 @@ $('boot-skip').addEventListener('click', async function(){
 
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 </script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => console.log('GUIOS SW registered:', reg.scope))
+      .catch((err) => console.error('GUIOS SW registration failed:', err));
+  });
+}
+</script>
 </body>
 </html>
