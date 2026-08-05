@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark" data-mode="auto">
 <head>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="logo.png" type="image/png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,6 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f0d0a">
 <meta name="color-scheme" content="dark light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'self'">
 <title>GUIOS</title>
 <style>
 /* ============================================================
@@ -217,7 +216,12 @@ a{ color:var(--accent); }
 .win-btn.min{ background:var(--warning); }
 .win-btn.max{ background:var(--success); }
 .win-title{ flex:1; text-align:center; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+.win-title .ttext{ overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .win-title .tag{ font-family:var(--font-mono); font-size:9px; color:var(--text-2); background:var(--bg-3); padding:1px 5px; border-radius:4px; letter-spacing:.04em; }
+.unresp-badge{ display:none; font-size:10px; font-weight:700; color:var(--danger); background:var(--bg-3); border:1px solid var(--danger); padding:2px 7px; border-radius:999px; pointer-events:auto; cursor:pointer; white-space:nowrap; flex-shrink:0; animation:unrespPulse 1.4s ease-in-out infinite; }
+.win.unresponsive .unresp-badge{ display:inline-flex; align-items:center; }
+.win.unresponsive .win-titlebar{ background:linear-gradient(180deg, rgba(226,88,74,.14), transparent); }
+@keyframes unrespPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
 .win-body{ flex:1; position:relative; overflow:hidden; background:var(--bg-0); }
 .win-body iframe{ width:100%; height:100%; border:none; display:block; background:#fff; }
 .win-body .sysapp-content{ width:100%; height:100%; overflow-y:auto; }
@@ -290,6 +294,12 @@ html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
 .btn.block{ width:100%; justify-content:center; }
 .btn:disabled{ opacity:.45; pointer-events:none; }
 .field-label{ font-size:11.5px; color:var(--text-1); margin-bottom:6px; display:block; font-weight:600; letter-spacing:.02em; }
+.risk-panel{ margin:4px 0 16px; padding:12px; border-radius:var(--radius-sm); background:var(--bg-2); border:1px solid var(--border); }
+.risk-panel.ok{ border-color:rgba(92,184,122,.3); }
+.risk-panel-title{ font-size:11.5px; font-weight:700; margin-bottom:6px; }
+.risk-item{ font-size:11.5px; line-height:1.6; padding:3px 0 3px 15px; position:relative; color:var(--text-1); }
+.risk-item::before{ content:'•'; position:absolute; left:2px; }
+.risk-item.warn{ color:var(--warning); }
 .text-input,.textarea-input{ width:100%; background:var(--bg-0); border:1px solid var(--border-strong); padding:9px 12px; border-radius:var(--radius-sm); color:var(--text-0); font-size:13px; outline:none; }
 .text-input:focus,.textarea-input:focus{ border-color:var(--accent); }
 .textarea-input{ resize:vertical; font-family:var(--font-mono); line-height:1.6; }
@@ -325,6 +335,12 @@ html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
 .app-card-body h4{ font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:7px; }
 .app-card-body p{ font-size:12px; color:var(--text-1); margin-top:3px; line-height:1.55; }
 .app-card-meta{ font-size:10.5px; color:var(--text-2); margin-top:6px; font-family:var(--font-mono); }
+.remote-title-row{ display:flex; align-items:center; justify-content:space-between; margin:20px 4px 8px; }
+.remote-title-row>span{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-2); }
+.remote-refresh-btn{ width:26px; height:26px; border-radius:var(--radius-xs); display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; color:var(--text-1); background:var(--bg-2); border:1px solid var(--border); cursor:pointer; transition:background var(--dur-fast); }
+.remote-refresh-btn:hover{ background:var(--bg-3); color:var(--text-0); }
+.remote-refresh-btn.spinning{ animation:remoteSpin .8s linear infinite; }
+@keyframes remoteSpin{ to{ transform:rotate(360deg); } }
 .app-card-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .drop-zone{ border:1.5px dashed var(--border-strong); border-radius:var(--radius-md); padding:26px 16px; text-align:center; margin-bottom:18px; transition:border-color var(--dur-fast),background var(--dur-fast); }
 .drop-zone.drag-over{ border-color:var(--accent); background:var(--bg-1); }
@@ -1068,6 +1084,10 @@ const StorageBackend = (function(){
 
 /* ---------------- constants ---------------- */
 const OS_VERSION = '1.0.0';
+/* Remote app catalog: a JSON array hosted on GitHub (see RemoteCatalog module
+   below for the expected schema and public/skills store UI). Change this to
+   point at a different repo/branch if needed. */
+const GITHUB_CATALOG_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOSappstore/main/catalog.json';
 const SYSTEM_APPS = [
   { id:'store', name:'機能ストア', icon:'🛒', color:'#b6633f', system:true, description:'アプリの追加・削除・管理' },
   { id:'settings', name:'設定', icon:'⚙️', color:'#7d7565', system:true, description:'外観・レイアウト・ストレージ' }
@@ -1203,8 +1223,8 @@ const AppRegistry = (function(){
       name: String(overrides.name || parsed.name || 'アプリ').slice(0, 40),
       icon: overrides.icon || parsed.icon || '🧩',
       color: overrides.color || parsed.color || '#7d7565',
-      version: parsed.version || '1.0.0',
-      author: parsed.author || '不明',
+      version: String(overrides.version || parsed.version || '1.0.0').slice(0, 20),
+      author: String(overrides.author || parsed.author || '不明').slice(0, 40),
       description: String(overrides.description || parsed.description || '').slice(0, 140),
       builtin: false,
       installedAt: Date.now(),
@@ -1252,6 +1272,63 @@ const AppRegistry = (function(){
     uninstall: uninstall, estimateSize: estimateSize
   };
 })();
+
+/* ---------------- remote app catalog (GitHub-hosted JSON index) ----------------
+   catalog.json is expected to be a JSON array of objects:
+     { "id", "name", "version", "icon", "color", "description", "author", "url" }
+   "url" must point directly at the app's standalone .html file. Everything here
+   only ever feeds into AppRegistry.installFromCode(), so a remote entry is
+   installed and sandboxed exactly like a locally dropped-in file -- fetching
+   the list just automates discovery, it does not grant any new capability. */
+const RemoteCatalog = (function(){
+  let status = 'idle'; // idle | loading | loaded | error
+  let items = [];
+  let errorMsg = '';
+
+  function normalizeEntry(raw){
+    if(!raw || typeof raw !== 'object') return null;
+    const rawId = String(raw.id || '').trim();
+    const url = String(raw.url || '').trim();
+    if(!rawId || !url) return null;
+    const id = slugify(rawId);
+    const color = /^#[0-9a-fA-F]{3,8}$/.test(raw.color || '') ? raw.color : '#7d7565';
+    return {
+      id: id,
+      name: String(raw.name || id).slice(0, 40),
+      version: String(raw.version || '1.0.0').slice(0, 20),
+      icon: String(raw.icon || '🧩').slice(0, 4),
+      color: color,
+      description: String(raw.description || '').slice(0, 140),
+      author: String(raw.author || '不明').slice(0, 40),
+      url: url
+    };
+  }
+
+  async function fetchCatalog(force){
+    if(status === 'loading') return { status: status, items: items, error: errorMsg };
+    if(status === 'loaded' && !force) return { status: status, items: items, error: errorMsg };
+    status = 'loading';
+    try{
+      const res = await fetch(GITHUB_CATALOG_URL, { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(!Array.isArray(data)) throw new Error('カタログの形式が不正です（配列である必要があります）');
+      items = data.map(normalizeEntry).filter(Boolean);
+      status = 'loaded';
+      errorMsg = '';
+    }catch(err){
+      status = 'error';
+      errorMsg = (err && err.message) ? err.message : String(err);
+      console.error('RemoteCatalog fetch failed:', err);
+    }
+    return { status: status, items: items, error: errorMsg };
+  }
+
+  function getState(){ return { status: status, items: items, error: errorMsg }; }
+
+  return { fetchCatalog: fetchCatalog, getState: getState };
+})();
+
 </script>
 
 <script>
@@ -1311,7 +1388,7 @@ const WindowManager = (function(){
           '<div class="win-btn min" data-act="min" title="最小化"></div>' +
           '<div class="win-btn max" data-act="max" title="最大化"></div>' +
         '</div>' +
-        '<div class="win-title"><span class="ttext"></span></div>' +
+        '<div class="win-title"><span class="ttext"></span><span class="unresp-badge" data-act="forcequit" title="応答なし・タップで強制終了">⚠️ 応答なし</span></div>' +
         '<div class="win-close-mobile" data-act="min">⌄</div>' +
       '</div>' +
       '<div class="win-body"></div>' +
@@ -1326,7 +1403,8 @@ const WindowManager = (function(){
     const win = {
       id: id, appId: opts.appId, el: el, system: !!opts.system,
       iframeEl: (opts.contentEl && opts.contentEl.tagName === 'IFRAME') ? opts.contentEl : null,
-      title: opts.title || '', icon: opts.icon || '', state: 'normal', rect: rect, preMaxRect: null
+      title: opts.title || '', icon: opts.icon || '', state: 'normal', rect: rect, preMaxRect: null,
+      lastPongAt: Date.now(), unresponsive: false
     };
     wins.push(win);
     applyRect(win);
@@ -1374,6 +1452,13 @@ const WindowManager = (function(){
         if(act === 'close') close(w.id);
         else if(act === 'min') toggleMinimize(w.id);
         else if(act === 'max') toggleMaximize(w.id);
+        else if(act === 'forcequit'){
+          confirmDialog({
+            title: 'アプリが応答していません',
+            body: '「' + w.title + '」が応答していません。強制終了しますか？',
+            okLabel: '強制終了', danger: true
+          }).then(function(ok){ if(ok) close(w.id); });
+        }
       });
     });
   }
@@ -1515,11 +1600,44 @@ const WindowManager = (function(){
     }
   }
 
+  /* ---------------- heartbeat / unresponsive-app watchdog ----------------
+     A sandboxed app cannot report its own freeze (a synchronous infinite
+     loop blocks its whole JS thread, including any of its own code that
+     might otherwise say "I'm stuck"). So the parent instead periodically
+     pings every app iframe and independently notices silence -- this
+     works precisely because the ping-responder is injected kernel code
+     (see buildAppBootstrap) registered before any app code runs, and the
+     parent's own check runs in its own thread regardless of what happens
+     inside a child iframe. */
+  const HEARTBEAT_INTERVAL_MS = 4000;
+  const UNRESPONSIVE_THRESHOLD_MS = 9000;
+
+  function notePong(id){
+    const w = byId(id);
+    if(!w) return;
+    w.lastPongAt = Date.now();
+    if(w.unresponsive){ w.unresponsive = false; w.el.classList.remove('unresponsive'); }
+  }
+
+  function heartbeatTick(){
+    const now = Date.now();
+    wins.forEach(function(w){
+      if(!w.iframeEl) return;
+      try{ w.iframeEl.contentWindow.postMessage({ guios:true, __ping__:true }, '*'); }catch(err){}
+      const stale = (now - w.lastPongAt) > UNRESPONSIVE_THRESHOLD_MS;
+      if(stale !== w.unresponsive){
+        w.unresponsive = stale;
+        w.el.classList.toggle('unresponsive', stale);
+      }
+    });
+  }
+  setInterval(heartbeatTick, HEARTBEAT_INTERVAL_MS);
+
   return {
     create: create, focus: focus, close: close, toggleMinimize: toggleMinimize, toggleMaximize: toggleMaximize,
     byId: byId, byAppId: byAppId, byIframeWindow: byIframeWindow, all: all, focused: focused,
     loadGeometry: loadGeometry, updateDockRunningState: updateDockRunningState, closeAllForApp: closeAllForApp,
-    relayoutForModeChange: relayoutForModeChange
+    relayoutForModeChange: relayoutForModeChange, notePong: notePong
   };
 })();
 </script>
@@ -1527,11 +1645,15 @@ const WindowManager = (function(){
 <script>
 /* ---------------- sandbox bridge ----------------
    Every non-system app runs in an iframe with sandbox="allow-scripts
-   allow-forms allow-modals allow-popups" and NO allow-same-origin, so
-   it gets a unique opaque origin: it cannot reach this parent
-   document, and a crash or infinite loop inside it fires only that
-   iframe's own error handling, never the shell's. The only channel
-   in or out is postMessage, wrapped below as window.GUIOS.
+   allow-forms allow-modals allow-downloads" and NO allow-same-origin,
+   NO allow-popups, so it gets a unique opaque origin: it cannot reach
+   this parent document, cannot spawn an unsandboxed popup/tab, and a
+   crash or infinite loop inside it fires only that iframe's own error
+   handling, never the shell's. The only channel in or out is
+   postMessage, wrapped below as window.GUIOS. A lightweight heartbeat
+   (see WindowManager ping/notePong) independently detects an app whose
+   script has hung and offers the user a force-quit affordance, since a
+   frozen iframe cannot itself report that it is frozen.
 ------------------------------------------------------------- */
 function currentPlatformInfo(){
   return {
@@ -1549,6 +1671,14 @@ function buildAppBootstrap(meta){
   var APP_INFO = ${JSON.stringify(appInfo)};
   var PLATFORM = ${JSON.stringify(platform)};
   var _reqId = 0; var _pending = {};
+  /* heartbeat: answered unconditionally and independently of any app code
+     below, so the parent can tell a genuinely hung script apart from one
+     that's just busy -- see WindowManager's heartbeat in the parent. */
+  window.addEventListener('message', function(e){
+    if(e.data && e.data.guios === true && e.data.__ping__ === true){
+      try{ parent.postMessage({ guios:true, __pong__:true }, '*'); }catch(err){}
+    }
+  });
   window.addEventListener('message', function(e){
     if(!e.data || e.data.guios !== true || typeof e.data.reqId === 'undefined') return;
     var p = _pending[e.data.reqId]; if(!p) return; delete _pending[e.data.reqId];
@@ -1600,13 +1730,39 @@ function buildAppBootstrap(meta){
 `;
 }
 
+/* ---------------- message-rate limiting (DoS protection) ----------------
+   A misbehaving or malicious app could try to flood the parent with
+   thousands of SDK calls per second (each one doing real work: storage
+   I/O, toast rendering, etc). This is a simple per-app sliding window:
+   once an app exceeds the budget, further messages are silently dropped
+   for the rest of the window. The app's own SDK call() already has an
+   8s timeout, so a dropped message just surfaces as a rejected promise
+   on the app side rather than any kind of crash. */
+const _msgRate = new Map();
+const MSG_RATE_LIMIT = 60;
+const MSG_RATE_WINDOW_MS = 1000;
+function isRateLimited(appId){
+  const now = Date.now();
+  let r = _msgRate.get(appId);
+  if(!r || now - r.windowStart > MSG_RATE_WINDOW_MS){ r = { count: 0, windowStart: now }; _msgRate.set(appId, r); }
+  r.count++;
+  return r.count > MSG_RATE_LIMIT;
+}
+
 /* parent-side handler: services requests from every app iframe */
 window.addEventListener('message', async function(e){
   const data = e.data;
-  if(!data || data.guios !== true || typeof data.reqId === 'undefined') return;
+  if(!data || data.guios !== true) return;
+  if(data.__pong__ === true){
+    const pw = WindowManager.byIframeWindow(e.source);
+    if(pw) WindowManager.notePong(pw.id);
+    return;
+  }
+  if(typeof data.reqId === 'undefined') return;
   const win = WindowManager.byIframeWindow(e.source);
   if(!win) return;
   const appId = win.appId;
+  if(isRateLimited(appId)) return;
   function reply(result, error){
     try{ e.source.postMessage({ guios:true, reqId: data.reqId, result: result, error: error }, '*'); }catch(err){}
   }
@@ -1693,7 +1849,7 @@ async function launchApp(appId){
     try{ code = await AppRegistry.getCode(appId); }catch(err){}
     contentEl = document.createElement('iframe');
     contentEl.className = 'app-frame';
-    contentEl.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox');
+    contentEl.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-downloads');
     contentEl.srcdoc = buildAppBootstrap(meta) + code;
   }
   let savedRect = null;
@@ -1793,7 +1949,8 @@ function shade(hex, percent){
   }catch(e){ return hex; }
 }
 function iconGlyphHTML(app){
-  const bg = app.color || '#7d7565';
+  const raw = app.color || '#7d7565';
+  const bg = /^#[0-9a-fA-F]{3,8}$/.test(raw) ? raw : '#7d7565';
   return '<div class="icon-glyph' + (app.system ? ' system' : '') + '" style="background:linear-gradient(155deg,' + bg + ',' + shade(bg, -18) + ')">' + escapeHtml(app.icon || '🧩') + '</div>';
 }
 
@@ -1914,6 +2071,8 @@ const SDK_REFERENCE_TEXT =
 'GUIOS.share(text)                -> 共有(未対応時はクリップボードへ)\n' +
 'GUIOS.clipboard.writeText(text) -> クリップボードにコピー\n' +
 'GUIOS.haptic()                  -> 対応端末で軽い振動\n' +
+'GUIOS.wallpaper.list()          -> 壁紙一覧と現在の設定を取得\n' +
+'GUIOS.wallpaper.set(opts)       -> ホーム画面の壁紙を変更\n' +
 'GUIOS.app / GUIOS.platform      -> 自分自身とOSの情報\n\n' +
 '保存データはアプリごとに自動で分離されます。\n' +
 '他のアプリの領域を読み書きすることはできません。';
@@ -1980,6 +2139,8 @@ function renderStoreApp(container){
       '</div>' +
       '<input class="text-input store-search" id="storeSearch" placeholder="アプリを検索">' +
       '<div id="storeListRoot"></div>' +
+      '<div class="remote-title-row"><span>🌐 リモートカタログ</span><button class="remote-refresh-btn" id="storeRemoteRefresh" title="再読み込み">⟳</button></div>' +
+      '<div id="storeRemoteRoot"><div class="empty-hint">読み込み中…</div></div>' +
       '<div class="section-title">開発者向け</div>' +
       '<div class="card template-row">' +
         '<div style="flex:1"><b style="font-size:12.5px">新規アプリのひな形をダウンロード</b>' +
@@ -2006,6 +2167,8 @@ function renderStoreApp(container){
   qs('#storeSearch', container).addEventListener('input', debounce(function(e){ renderStoreList(container, e.target.value); }, 120));
   qs('#storeTemplateBtn', container).addEventListener('click', downloadAppTemplate);
   qs('.code-block', container).textContent = SDK_REFERENCE_TEXT;
+  qs('#storeRemoteRefresh', container).addEventListener('click', function(){ renderRemoteCatalogList(container, true); });
+  renderRemoteCatalogList(container);
 }
 
 function storeCardHTML(meta, kind){
@@ -2069,6 +2232,73 @@ async function installBuiltinFromStore(id, container){
   showToast({ title:'インストール完了', body: meta.name + ' を追加しました', icon: meta.icon });
 }
 
+/* ---------------- remote catalog UI (fetches GITHUB_CATALOG_URL) ---------------- */
+function remoteCardHTML(entry){
+  const name = escapeHtml(entry.name), desc = escapeHtml(entry.description || '');
+  return '<div class="app-card">' + iconGlyphHTML(entry) +
+    '<div class="app-card-body"><h4>' + name + ' <span class="pill">v' + escapeHtml(entry.version) + '</span></h4>' +
+    '<p>' + desc + '</p>' +
+    '<div class="app-card-meta">作者: ' + escapeHtml(entry.author) + '</div>' +
+    '<div class="app-card-actions"><button class="btn" data-remote-install="' + escapeHtml(entry.id) + '">インストール</button></div></div></div>';
+}
+
+async function renderRemoteCatalogList(container, force){
+  const root = qs('#storeRemoteRoot', container);
+  if(!root) return;
+  const refreshBtn = qs('#storeRemoteRefresh', container);
+  if(refreshBtn) refreshBtn.classList.add('spinning');
+  if(force) root.innerHTML = '<div class="empty-hint">読み込み中…</div>';
+
+  const state = await RemoteCatalog.fetchCatalog(force);
+
+  // the store window may have been closed while the fetch was in flight
+  if(!document.body.contains(container) || !qs('#storeRemoteRoot', container)) return;
+  if(refreshBtn) refreshBtn.classList.remove('spinning');
+
+  if(state.status === 'error'){
+    root.innerHTML =
+      '<div class="empty-hint">カタログを取得できませんでした<br><span style="font-size:10.5px;opacity:.8;">' + escapeHtml(state.error || '') + '</span></div>' +
+      '<div style="text-align:center;margin-top:10px;"><button class="btn secondary" id="storeRemoteRetry">再読み込み</button></div>';
+    const retry = qs('#storeRemoteRetry', container);
+    if(retry) retry.addEventListener('click', function(){ renderRemoteCatalogList(container, true); });
+    return;
+  }
+
+  const available = state.items.filter(function(e){ return !AppRegistry.isInstalled(e.id); });
+  if(!available.length){
+    root.innerHTML = '<div class="empty-hint">' + (state.items.length ? 'カタログのアプリはすべてインストール済みです' : 'カタログにアプリがありません') + '</div>';
+    return;
+  }
+  root.innerHTML = available.map(remoteCardHTML).join('');
+  qsa('[data-remote-install]', root).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const entry = state.items.find(function(e){ return e.id === btn.dataset.remoteInstall; });
+      if(entry) installFromRemoteCatalog(entry, container, btn);
+    });
+  });
+}
+
+async function installFromRemoteCatalog(entry, container, btn){
+  if(btn){ btn.disabled = true; btn.textContent = '取得中…'; }
+  try{
+    const res = await fetch(entry.url, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const code = await res.text();
+    if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
+    showInstallConfirmModal(code, {
+      id: entry.id, icon: entry.icon, name: entry.name, description: entry.description,
+      version: entry.version, author: entry.author, color: entry.color
+    }, {
+      sourceLabel: 'リモートカタログから取得',
+      onInstalled: function(){ renderRemoteCatalogList(container); }
+    });
+  }catch(err){
+    console.error('Remote fetch failed:', err);
+    showToast({ title:'取得失敗', body: entry.name + ' を取得できませんでした', type:'error' });
+    if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
+  }
+}
+
 $('install-file-input').addEventListener('change', function(e){
   const f = e.target.files && e.target.files[0];
   e.target.value = '';
@@ -2084,31 +2314,72 @@ async function handleInstallFile(file){
   showInstallConfirmModal(text, { name: parsed.name || guessName, icon: parsed.icon || '🧩', description: parsed.description || '' });
 }
 
-function showInstallConfirmModal(code, defaults){
+/* ---------------- lightweight static risk scan ----------------
+   Pattern-matching heuristics only -- this cannot prove an app is safe,
+   and it deliberately never blocks installation on its own (the sandbox
+   is what actually contains the app; false positives here are common
+   and false negatives are guaranteed for anything determined to hide).
+   The goal is informed consent, the same spirit as a permission list:
+   show the person a plain-language summary of what stood out so they
+   can decide, rather than pretending a regex scan is a security
+   guarantee. */
+function analyzeAppRisk(code){
+  const src = String(code || '');
+  const notes = [];
+  if(/\beval\s*\(/.test(src)) notes.push({ level:'warn', text:'eval() を使用しています（実行時に文字列をコードとして評価します）' });
+  if(/\bnew\s+Function\s*\(/.test(src)) notes.push({ level:'warn', text:'new Function() を使用しています（動的コード生成）' });
+  if(/<script[^>]+src\s*=\s*["']https?:\/\//i.test(src)) notes.push({ level:'warn', text:'外部サーバーからスクリプトを読み込みます。読み込まれる内容は事前に確認できません' });
+  if(/(?:\\x[0-9a-fA-F]{2}){10,}/.test(src) || /(?:\\u[0-9a-fA-F]{4}){10,}/.test(src)) notes.push({ level:'warn', text:'難読化された可能性のある文字列が含まれています' });
+  if(/\btop\.location\b|\bparent\.location\b|\bwindow\.top\b/.test(src)) notes.push({ level:'info', text:'親フレームへの参照が含まれます（サンドボックスにより実際の操作はできません）' });
+  if(/localStorage|sessionStorage/.test(src)) notes.push({ level:'info', text:'localStorage/sessionStorageを参照しています（サンドボックス内では再読み込みで消去されます）' });
+  if(bytesOf(src) > 500 * 1024) notes.push({ level:'info', text:'ファイルサイズが大きめです（' + fmtBytes(bytesOf(src)) + '）' });
+  return notes;
+}
+function riskPanelHTML(code){
+  const risk = analyzeAppRisk(code);
+  if(!risk.length){
+    return '<div class="risk-panel ok"><div class="risk-panel-title">✅ 明らかな危険パターンは検出されませんでした</div>' +
+      '<div class="risk-item">このアプリは allow-same-origin なしのサンドボックスで実行され、他のアプリやOS本体には触れられません。</div></div>';
+  }
+  return '<div class="risk-panel">' +
+    '<div class="risk-panel-title">⚠️ 確認事項（' + risk.length + '件）</div>' +
+    risk.map(function(r){ return '<div class="risk-item ' + r.level + '">' + escapeHtml(r.text) + '</div>'; }).join('') +
+    '<div class="risk-item">いずれの場合もサンドボックスにより他のアプリ・OS本体からは隔離されます。</div>' +
+    '</div>';
+}
+
+function showInstallConfirmModal(code, defaults, opts){
+  opts = opts || {};
   showModal(
     '<div class="modal-title">アプリを追加</div>' +
     '<div class="modal-sub">内容を確認してから追加してください。追加したアプリはサンドボックス化された領域で実行されます。</div>' +
+    riskPanelHTML(code) +
     '<label class="field-label">アイコン(絵文字)</label><input class="text-input" id="instIcon" maxlength="4" style="margin-bottom:12px;">' +
     '<label class="field-label">名前</label><input class="text-input" id="instName" maxlength="40" style="margin-bottom:12px;">' +
     '<label class="field-label">説明</label><input class="text-input" id="instDesc" maxlength="140" style="margin-bottom:4px;">' +
-    '<div style="font-size:11px;color:var(--text-2);margin-top:10px;">サイズ: ' + fmtBytes(bytesOf(code)) + '</div>' +
+    '<div style="font-size:11px;color:var(--text-2);margin-top:10px;">サイズ: ' + fmtBytes(bytesOf(code)) + (opts.sourceLabel ? ' ・ ' + escapeHtml(opts.sourceLabel) : '') + '</div>' +
     '<div class="modal-actions"><button class="btn secondary" id="instCancel">キャンセル</button><button class="btn" id="instOk">追加する</button></div>',
     function(card){
-      card.querySelector('#instIcon').value = defaults.icon;
-      card.querySelector('#instName').value = defaults.name;
-      card.querySelector('#instDesc').value = defaults.description;
+      card.querySelector('#instIcon').value = defaults.icon || '🧩';
+      card.querySelector('#instName').value = defaults.name || '';
+      card.querySelector('#instDesc').value = defaults.description || '';
       card.querySelector('#instCancel').onclick = hideModal;
       card.querySelector('#instOk').onclick = async function(){
         const overrides = {
+          id: defaults.id || undefined,
           icon: card.querySelector('#instIcon').value.trim() || '🧩',
           name: card.querySelector('#instName').value.trim() || 'アプリ',
-          description: card.querySelector('#instDesc').value.trim()
+          description: card.querySelector('#instDesc').value.trim(),
+          version: defaults.version || undefined,
+          author: defaults.author || undefined,
+          color: defaults.color || undefined
         };
         hideModal();
         const meta = await AppRegistry.installFromCode(code, overrides);
         renderDesktop($('desktop-search').value);
         renderDock();
         refreshStoreListIfOpen();
+        if(opts.onInstalled) opts.onInstalled(meta);
         showToast({ title:'インストール完了', body: meta.name + ' を追加しました', icon: meta.icon });
       };
     }
@@ -2426,15 +2697,6 @@ $('boot-skip').addEventListener('click', async function(){
 });
 
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then((reg) => console.log('GUIOS SW registered:', reg.scope))
-      .catch((err) => console.error('GUIOS SW registration failed:', err));
-  });
-}
 </script>
 </body>
 </html>
