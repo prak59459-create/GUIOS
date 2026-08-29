@@ -237,6 +237,15 @@ a{ color:var(--accent); }
 @media (pointer:coarse){ .win-resize{ display:none; } }
 .win.maximized{ border-radius:0 !important; }
 
+/* ---------- snap ghost (split view preview) ---------- */
+#snap-ghost{
+  position:absolute; z-index:6; pointer-events:none; border-radius:var(--radius-lg);
+  background:color-mix(in srgb, var(--accent) 16%, transparent); border:2px solid var(--accent);
+  transition:left .12s var(--ease), top .12s var(--ease), width .12s var(--ease), height .12s var(--ease), opacity .12s var(--ease);
+  opacity:0;
+}
+#snap-ghost.show{ opacity:1; }
+
 /* mobile: fullscreen app windows */
 html[data-mode="mobile"] .win{
   left:0 !important; top:0 !important; width:100% !important; height:100% !important;
@@ -464,6 +473,7 @@ html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
     <div id="desktop-canvas">
       <div id="desktop"></div>
       <div id="window-layer"></div>
+      <div id="snap-ghost" class="hidden"></div>
     </div>
   </div>
   <div id="dock-wrap" data-side="bottom"><div id="dock"></div></div>
@@ -1541,11 +1551,20 @@ const WindowManager = (function(){
       ny = clamp(ny, 0, cr.height - 32);
       w.rect.x = nx; w.rect.y = ny;
       w.el.style.left = nx + 'px'; w.el.style.top = ny + 'px';
-      const edge = 26;
-      if(e.clientX <= edge) snapZone = 'left';
-      else if(e.clientX >= cr.width - edge) snapZone = 'right';
-      else if(e.clientY <= edge) snapZone = 'top';
+      const edge = 26, corner = 70;
+      const nearL = e.clientX <= edge, nearR = e.clientX >= cr.width - edge;
+      const nearT = e.clientY <= edge, nearB = e.clientY >= cr.height - edge;
+      const cornerL = e.clientX <= corner, cornerR = e.clientX >= cr.width - corner;
+      const cornerT = e.clientY <= corner, cornerB = e.clientY >= cr.height - corner;
+      if(cornerL && cornerT) snapZone = 'top-left';
+      else if(cornerR && cornerT) snapZone = 'top-right';
+      else if(cornerL && cornerB) snapZone = 'bottom-left';
+      else if(cornerR && cornerB) snapZone = 'bottom-right';
+      else if(nearL) snapZone = 'left';
+      else if(nearR) snapZone = 'right';
+      else if(nearT) snapZone = 'top';
       else snapZone = null;
+      if(snapZone) showSnapGhost(zoneRect(snapZone, cr)); else hideSnapGhost();
     } else if(resizeCtx){
       const w = byId(resizeCtx.winId); if(!w) return;
       const cr = canvasRect();
@@ -1569,6 +1588,7 @@ const WindowManager = (function(){
         persistGeometry(w);
       }
       snapZone = null; dragCtx = null;
+      hideSnapGhost();
     }
     if(resizeCtx){
       const w = byId(resizeCtx.winId);
@@ -1580,11 +1600,43 @@ const WindowManager = (function(){
   document.addEventListener('pointerup', onPointerUp);
   document.addEventListener('pointercancel', onPointerUp);
 
+  /* Half-, quarter- and full-screen targets for a given snap zone, shared
+     by the live drag-to-edge ghost preview and the Cmd/Ctrl+arrow shortcuts
+     below -- one geometry table so the two can never drift apart. */
+  function zoneRect(zone, cr){
+    const halfW = Math.round(cr.width / 2), halfH = Math.round(cr.height / 2);
+    switch(zone){
+      case 'left': return { x:0, y:0, w:halfW, h:cr.height };
+      case 'right': return { x:cr.width - halfW, y:0, w:halfW, h:cr.height };
+      case 'top': return { x:0, y:0, w:cr.width, h:cr.height };
+      case 'top-left': return { x:0, y:0, w:halfW, h:halfH };
+      case 'top-right': return { x:cr.width - halfW, y:0, w:halfW, h:halfH };
+      case 'bottom-left': return { x:0, y:cr.height - halfH, w:halfW, h:halfH };
+      case 'bottom-right': return { x:cr.width - halfW, y:cr.height - halfH, w:halfW, h:halfH };
+      default: return null;
+    }
+  }
+  function showSnapGhost(rect){
+    const g = $('snap-ghost');
+    if(!g || !rect) return;
+    g.style.left = rect.x + 'px'; g.style.top = rect.y + 'px';
+    g.style.width = rect.w + 'px'; g.style.height = rect.h + 'px';
+    g.classList.remove('hidden');
+    requestAnimationFrame(function(){ g.classList.add('show'); });
+  }
+  function hideSnapGhost(){
+    const g = $('snap-ghost');
+    if(!g) return;
+    g.classList.remove('show');
+    setTimeout(function(){ if(!g.classList.contains('show')) g.classList.add('hidden'); }, 130);
+  }
+
   function commitSnap(w, zone){
     const cr = canvasRect();
-    if(zone === 'left') w.rect = { x:0, y:0, w:Math.round(cr.width/2), h:cr.height };
-    else if(zone === 'right') w.rect = { x:Math.round(cr.width/2), y:0, w:Math.round(cr.width/2), h:cr.height };
-    else if(zone === 'top') w.rect = { x:0, y:0, w:cr.width, h:cr.height };
+    const rect = zoneRect(zone, cr);
+    if(!rect) return;
+    if(w.state === 'maximized'){ w.state = 'normal'; w.el.classList.remove('maximized'); }
+    w.rect = rect;
     applyRect(w);
   }
 
@@ -1701,11 +1753,23 @@ const WindowManager = (function(){
   }
   setInterval(heartbeatTick, HEARTBEAT_INTERVAL_MS);
 
+  /* Keyboard equivalent of dragging a window to an edge -- same zoneRect()
+     table, so Cmd/Ctrl+arrow always lands exactly where the drag ghost
+     would have shown. */
+  function snapFocused(zone){
+    if(isMobile()) return false;
+    const w = focused();
+    if(!w || w.system) return false;
+    commitSnap(w, zone);
+    persistGeometry(w);
+    return true;
+  }
+
   return {
     create: create, focus: focus, close: close, toggleMinimize: toggleMinimize, toggleMaximize: toggleMaximize,
     byId: byId, byAppId: byAppId, byIframeWindow: byIframeWindow, all: all, focused: focused,
     loadGeometry: loadGeometry, updateDockRunningState: updateDockRunningState, closeAllForApp: closeAllForApp,
-    relayoutForModeChange: relayoutForModeChange, notePong: notePong
+    relayoutForModeChange: relayoutForModeChange, notePong: notePong, snapFocused: snapFocused
   };
 })();
 </script>
@@ -2933,6 +2997,12 @@ document.addEventListener('keydown', function(e){
     const f = WindowManager.focused();
     if(f && !f.system){ e.preventDefault(); WindowManager.close(f.id); }
   }
+  /* Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
+     to a half of the screen (or maximizes on ↑), same geometry the drag
+     ghost previews. */
+  if(mod && e.key === 'ArrowLeft'){ if(WindowManager.snapFocused('left')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowRight'){ if(WindowManager.snapFocused('right')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowUp'){ if(WindowManager.snapFocused('top')) e.preventDefault(); }
 });
 
 /* ---------------- kernel-level defensive logging (never surfaced as noisy UI) ---------------- */
