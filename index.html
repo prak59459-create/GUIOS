@@ -210,6 +210,14 @@ body{
 .tb-btn:hover{ background:var(--void-2); color:var(--ink-0); }
 #tb-clock{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-1); letter-spacing:.04em; text-align:right; line-height:1.35; }
 #tb-clock small{ display:block; font-size:9px; color:var(--ink-2); }
+#desktop-switcher{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.desk-dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-2); cursor:pointer; transition:background var(--t-fast), width var(--t-fast), border-radius var(--t-fast); }
+.desk-dot:hover{ background:var(--ink-1); }
+.desk-dot.active{ background:var(--signal); width:16px; border-radius:4px; }
+.desk-add-btn{ width:15px; height:15px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; color:var(--ink-2); background:var(--void-2); cursor:pointer; flex-shrink:0; border:none; }
+.desk-add-btn:hover{ color:var(--ink-0); background:var(--void-3); }
+html[data-mode="mobile"] #desktop-switcher{ display:none; }
+.win.on-other-desktop{ display:none; }
 html[data-mode="mobile"] #tb-tasks{ display:none; }
 
 /* ---------- launcher ---------- */
@@ -512,6 +520,7 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
       </svg>
     </div>
     <div id="tb-tasks"></div>
+    <div id="desktop-switcher"></div>
     <div id="tb-right">
       <button class="tb-btn" id="tb-files" title="ファイル">🗂</button>
       <button class="tb-btn" id="tb-term" title="ターミナル">▶_</button>
@@ -1539,7 +1548,31 @@ function showContextMenu(x, y, items){
 }
 function hideContextMenu(){ $('ctx').classList.add('hidden'); }
 document.addEventListener('pointerdown', function(e){ if(!e.target.closest('#ctx')) hideContextMenu(); });
-document.addEventListener('contextmenu', function(e){ if(!e.target.closest('#desk, .tile, .fx-row, .tnode, .acard')) e.preventDefault(); });
+document.addEventListener('contextmenu', function(e){ if(!e.target.closest('#desk, .tile, .fx-row, .tnode, .acard, .titlebar, .task, .desk-dot')) e.preventDefault(); });
+
+/* ---------------- virtual desktop switcher (taskbar) ---------------- */
+function renderDesktopSwitcher(){
+  const el = $('desktop-switcher');
+  if(!el) return;
+  const desks = Desktops.all(), active = Desktops.active();
+  let html = desks.map(function(d){
+    return '<div class="desk-dot' + (d.id === active ? ' active' : '') + '" data-desk="' + d.id + '" title="' + escapeHtml(d.name) + '"></div>';
+  }).join('');
+  if(desks.length < Desktops.MAX) html += '<button class="desk-add-btn" id="deskAddBtn" title="新しいデスクトップを追加">＋</button>';
+  el.innerHTML = html;
+  qsa('.desk-dot', el).forEach(function(dot){
+    dot.addEventListener('click', function(){ Desktops.switchTo(dot.dataset.desk); });
+    dot.addEventListener('contextmenu', function(e){
+      e.preventDefault();
+      if(desks.length <= 1) return;
+      showContextMenu(e.clientX, e.clientY, [
+        { icon:'🗑', label:'このデスクトップを削除', danger:true, onSelect:function(){ Desktops.remove(dot.dataset.desk); } }
+      ]);
+    });
+  });
+  const addBtn = $('deskAddBtn');
+  if(addBtn) addBtn.addEventListener('click', function(){ Desktops.add(); });
+}
 
 function glyphHTML(app, cls){
   const c = isHexColor(app.color) ? app.color : '#6b769a';
@@ -1554,6 +1587,71 @@ function downloadText(text, filename, mime){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
 }
+
+/* ---------------- virtual desktops ----------------
+   Each window belongs to exactly one desktop (see WM.create /
+   syncDesktopVisibility below). Switching desktops never destroys or
+   reloads a window -- it's purely a display:none toggle on .win elements
+   plus which taskbar tasks show, so a running app's iframe (and its
+   state) survives being on a desktop that isn't showing. */
+const Desktops = (function(){
+  const MAX = 6;
+  let list = [{ id: 'desk-1', name: 'デスクトップ 1' }];
+  let activeId = list[0].id;
+  const listeners = [];
+
+  async function load(){
+    const saved = safeJSONParse(await Store.get('n5:desktops'), null);
+    if(saved && Array.isArray(saved.list) && saved.list.length){
+      list = saved.list;
+      activeId = list.some(function(d){ return d.id === saved.activeId; }) ? saved.activeId : list[0].id;
+    }
+  }
+  async function persist(){ await Store.set('n5:desktops', JSON.stringify({ list: list, activeId: activeId })); }
+  function notify(){ listeners.forEach(function(fn){ try{ fn(); }catch(e){} }); }
+  function onChange(fn){ listeners.push(fn); }
+
+  function all(){ return list.slice(); }
+  function active(){ return activeId; }
+  function indexOf(id){ return list.findIndex(function(d){ return d.id === id; }); }
+
+  async function add(){
+    if(list.length >= MAX) return null;
+    const d = { id: uid('desk'), name: 'デスクトップ ' + (list.length + 1) };
+    list.push(d);
+    activeId = d.id;
+    await persist();
+    notify();
+    return d;
+  }
+  async function remove(id){
+    if(list.length <= 1) return false;
+    const idx = indexOf(id);
+    if(idx === -1) return false;
+    list.splice(idx, 1);
+    if(activeId === id) activeId = list[Math.max(0, idx - 1)].id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchTo(id){
+    if(id === activeId || indexOf(id) === -1) return false;
+    activeId = id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchByOffset(delta){
+    const idx = indexOf(activeId);
+    if(idx === -1) return false;
+    return switchTo(list[(idx + delta + list.length) % list.length].id);
+  }
+
+  return {
+    MAX: MAX, load: load, all: all, active: active, indexOf: indexOf,
+    add: add, remove: remove, switchTo: switchTo, switchByOffset: switchByOffset, onChange: onChange
+  };
+})();
 
 /* ---------------- window manager ---------------- */
 const WM = (function(){
@@ -1593,6 +1691,10 @@ const WM = (function(){
   }
   function focus(id){
     const w = byId(id); if(!w) return;
+    /* Clicking a taskbar task (or otherwise focusing) a window parked on a
+       different desktop should bring you to it -- otherwise "focus" would
+       silently do nothing visible. */
+    if(w.desktopId && w.desktopId !== Desktops.active()) Desktops.switchTo(w.desktopId);
     z++; w.el.style.zIndex = z;
     if(w.state === 'min'){ w.state = 'normal'; w.el.classList.remove('min'); }
     wins.forEach(function(o){ o.el.classList.toggle('focus', o.id === id); });
@@ -1624,10 +1726,11 @@ const WM = (function(){
       id, appId: o.appId, el, system: !!o.system,
       frame: o.content.tagName === 'IFRAME' ? o.content : null,
       title: o.title || '', icon: o.icon || '', state: 'normal',
-      rect: defaultRect(), pre: null, lastPong: Date.now(), hung: false
+      rect: defaultRect(), pre: null, lastPong: Date.now(), hung: false,
+      desktopId: Desktops.active()
     };
     wins.push(w);
-    applyRect(w); bind(w); focus(id); renderTasks();
+    applyRect(w); bind(w); syncDesktopVisibility(); focus(id); renderTasks();
     return w;
   }
   function close(id){
@@ -1666,6 +1769,25 @@ const WM = (function(){
       if(w.state === 'max') return;
       drag = { w, mode:'move', sx:e.clientX, sy:e.clientY, ox:w.rect.x, oy:w.rect.y };
       try{ tb.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    tb.addEventListener('contextmenu', function(e){
+      if(e.target.closest('[data-a]') || isMobile()) return;
+      e.preventDefault();
+      focus(w.id);
+      const desks = Desktops.all();
+      const items = [];
+      if(desks.length > 1){
+        desks.forEach(function(d){
+          if(d.id === w.desktopId) return;
+          items.push({ icon:'🖥', label:d.name + ' へ移動', onSelect:function(){ moveToDesktop(w.id, d.id); } });
+        });
+        items.push({ sep:true });
+      }
+      items.push({ icon:'⤢', label:w.state === 'max' ? '元のサイズに戻す' : '最大化', onSelect:function(){ toggleMax(w.id); } });
+      items.push({ icon:'⌄', label:'最小化', onSelect:function(){ toggleMin(w.id); } });
+      items.push({ sep:true });
+      items.push({ icon:'✕', label:'閉じる', danger:true, onSelect:function(){ close(w.id); } });
+      showContextMenu(e.clientX, e.clientY, items);
     });
     qsa('.rs', w.el).forEach(function(h){
       h.addEventListener('pointerdown', function(e){
@@ -1776,8 +1898,9 @@ const WM = (function(){
     /* Dragging a window to an edge already snaps it regardless of whether
        it's a "system" app (files/terminal/editor are all just windows to
        the person using them), so the keyboard shortcut shouldn't be more
-       restrictive than the mouse. */
-    if(!w) return false;
+       restrictive than the mouse. It must, however, refuse to act on a
+       window sitting on a desktop that isn't currently visible. */
+    if(!w || w.desktopId !== Desktops.active()) return false;
     const zn = zoneRect(kind);
     if(!zn) return false;
     applySnapZone(w, zn);
@@ -1805,7 +1928,8 @@ const WM = (function(){
     if(!bar) return;
     bar.innerHTML = '';
     const f = focused();
-    wins.forEach(function(w){
+    const active = Desktops.active();
+    wins.filter(function(w){ return w.desktopId === active; }).forEach(function(w){
       const meta = Registry.get(w.appId) || {};
       const el = document.createElement('div');
       el.className = 'task' + (f && f.id === w.id ? ' active' : '');
@@ -1825,7 +1949,23 @@ const WM = (function(){
       bar.appendChild(el);
     });
   }
-  return { create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused, relayout, notePong, renderTasks, snapFocused };
+  function syncDesktopVisibility(){
+    const active = Desktops.active();
+    wins.forEach(function(w){ w.el.classList.toggle('on-other-desktop', w.desktopId !== active); });
+    renderTasks();
+  }
+  function moveToDesktop(id, desktopId){
+    const w = byId(id); if(!w || w.desktopId === desktopId) return false;
+    w.desktopId = desktopId;
+    syncDesktopVisibility();
+    return true;
+  }
+  Desktops.onChange(syncDesktopVisibility);
+  Desktops.onChange(renderDesktopSwitcher);
+  return {
+    create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused,
+    relayout, notePong, renderTasks, snapFocused, syncDesktopVisibility, moveToDesktop
+  };
 })();
 </script>
 <script>
@@ -4715,7 +4855,7 @@ document.addEventListener('keydown', function(e){
   const mod = e.metaKey || e.ctrlKey;
   if(mod && (e.key === 'w' || e.key === 'W')){
     const f = WM.focused();
-    if(f){ e.preventDefault(); WM.close(f.id); }
+    if(f && f.desktopId === Desktops.active()){ e.preventDefault(); WM.close(f.id); }
   }
   if(mod && e.shiftKey && (e.key === 'e' || e.key === 'E')){ e.preventDefault(); launchApp('files'); }
   if(mod && e.shiftKey && (e.key === 't' || e.key === 'T')){ e.preventDefault(); launchApp('terminal'); }
@@ -4724,10 +4864,14 @@ document.addEventListener('keydown', function(e){
      stuck". Escape alone is taken by dialogs, so the combo is checked
      before the plain-Escape handling above can swallow it. */
   if(mod && e.shiftKey && e.key === 'Escape'){ e.preventDefault(); launchApp('taskmgr'); }
-  /* Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
+  /* Ctrl/Cmd+Alt+arrow switches virtual desktops (checked first so the Alt
+     modifier doesn't fall through to the plain split-view shortcuts below).
+     Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
      to a half of the screen (or maximizes on ↑), same geometry the drag
      ghost previews. */
-  if(mod && e.key === 'ArrowLeft'){ if(WM.snapFocused('left')) e.preventDefault(); }
+  if(mod && e.altKey && e.key === 'ArrowLeft'){ e.preventDefault(); Desktops.switchByOffset(-1); }
+  else if(mod && e.altKey && e.key === 'ArrowRight'){ e.preventDefault(); Desktops.switchByOffset(1); }
+  else if(mod && e.key === 'ArrowLeft'){ if(WM.snapFocused('left')) e.preventDefault(); }
   else if(mod && e.key === 'ArrowRight'){ if(WM.snapFocused('right')) e.preventDefault(); }
   else if(mod && e.key === 'ArrowUp'){ if(WM.snapFocused('max')) e.preventDefault(); }
 });
@@ -4773,6 +4917,8 @@ async function bootOS(){
     const reg = await Registry.load();
     if(reg.pruned.length) await bootLog('pruned ' + reg.pruned.length + ' orphaned registry entr' + (reg.pruned.length === 1 ? 'y' : 'ies'), 'warn');
     await bootLog('registry ready — ' + reg.count + ' user app(s)', 'ok');
+    await Desktops.load();
+    await bootLog('desktops ready — ' + Desktops.all().length + ' space(s)', 'ok');
     const nv = NVRAM.get();
     await bootLog('resources: ' + nv.memory.sizeMB + 'MB / ' + nv.cpu.cores + ' cores / secureboot ' + (nv.secureBoot.enabled ? 'on' : 'off'), 'ok');
     await bootLog('window manager online', 'ok');
@@ -4801,6 +4947,7 @@ function finish(){
   $('shell').classList.add('on');
   renderDesktop();
   WM.renderTasks();
+  renderDesktopSwitcher();
   tickClock();
   if(Boot.isSafe()){
     showToast({ title:'セーフモードで起動しました', body:'サードパーティアプリとカスタムテーマは無効です。修復後、UEFI Setup の Boot Target を戻してください。', icon:'⚠', type:'warn', ttl:9000 });
@@ -4831,6 +4978,7 @@ async function recover(safe){
   try{ await Config.load(); Theme.load(); Theme.apply(); }catch(e){}
   try{ await Permissions.load(); }catch(e){}
   try{ await Registry.load(); }catch(e){}
+  try{ await Desktops.load(); }catch(e){}
   finish();
 }
 $('boot-safe').addEventListener('click', function(){ recover(true); });
