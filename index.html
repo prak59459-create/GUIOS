@@ -330,25 +330,91 @@ html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
 .app-page{ padding:16px max(16px,var(--safe-l)) calc(30px + var(--safe-b)); }
 .page-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
 .page-head h2{ font-size:17px; font-weight:700; }
-.store-search{ margin-bottom:14px; }
-.app-card{ display:flex; gap:12px; padding:14px; background:var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:10px; align-items:flex-start; }
-.app-card .icon-glyph{ width:44px; height:44px; font-size:20px; flex-shrink:0; }
-.app-card-body{ flex:1; min-width:0; }
-.app-card-body h4{ font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:7px; }
-.app-card-body p{ font-size:12px; color:var(--text-1); margin-top:3px; line-height:1.55; }
-.app-card-meta{ font-size:10.5px; color:var(--text-2); margin-top:6px; font-family:var(--font-mono); }
-.remote-title-row{ display:flex; align-items:center; justify-content:space-between; margin:20px 4px 8px; }
-.remote-title-row>span{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-2); }
-.remote-refresh-btn{ width:26px; height:26px; border-radius:var(--radius-xs); display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; color:var(--text-1); background:var(--bg-2); border:1px solid var(--border); cursor:pointer; transition:background var(--dur-fast); }
-.remote-refresh-btn:hover{ background:var(--bg-3); color:var(--text-0); }
-.remote-refresh-btn.spinning{ animation:remoteSpin .8s linear infinite; }
+
+/* iOS App Store 風のレイアウト。他の system app（設定など）と共有する
+   .app-page / .card / .btn / .pill などのトークンはそのまま使い、配色は
+   OS のアクセントカラーに追従させつつ、形とタイポグラフィだけを
+   iOS 的な「大きな見出し + カプセル型検索バー + 一覧行」に寄せている。 */
+.store-topbar{ margin-bottom:2px; }
+.store-heading{ font-size:30px; font-weight:800; letter-spacing:-.01em; }
+.store-search-bar{
+  display:flex; align-items:center; gap:7px; background:var(--bg-2); border:1.5px solid transparent;
+  border-radius:var(--radius-full); padding:9px 14px; margin:14px 0 20px;
+  transition:background var(--dur-fast), border-color var(--dur-fast);
+}
+.store-search-bar.focused{ background:var(--bg-1); border-color:var(--accent); }
+.store-search-ic{ font-size:14px; color:var(--text-2); flex-shrink:0; }
+.store-search-input{ flex:1; min-width:0; background:none; border:none; outline:none; font-size:15px; color:var(--text-0); }
+.store-search-input::placeholder{ color:var(--text-2); }
+.store-search-clear{ width:20px; height:20px; border-radius:50%; background:var(--text-2); color:var(--bg-0); font-size:10.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.75; transition:opacity var(--dur-fast); }
+.store-search-clear:hover{ opacity:1; }
+
+.store-dropzone{ border:1.5px dashed var(--border-strong); border-radius:var(--radius-lg); padding:26px 16px; text-align:center; margin-bottom:24px; transition:border-color var(--dur-fast),background var(--dur-fast); }
+.store-dropzone.drag-over{ border-color:var(--accent); background:var(--bg-1); }
+.store-dropzone-ic{ font-size:26px; margin-bottom:8px; }
+.store-dropzone p{ font-size:12px; color:var(--text-1); margin-bottom:12px; line-height:1.6; }
+
+.store-section-title{ font-size:19px; font-weight:800; letter-spacing:-.005em; margin:26px 2px 8px; }
+.store-section-title:first-child{ margin-top:0; }
+.store-section-row{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:26px 2px 8px; }
+.store-section-row .store-section-title{ margin:0; }
+.store-refresh-btn{ width:26px; height:26px; border-radius:var(--radius-xs); display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; color:var(--text-1); background:var(--bg-2); border:1px solid var(--border); cursor:pointer; transition:background var(--dur-fast); flex-shrink:0; }
+.store-refresh-btn:hover{ background:var(--bg-3); color:var(--text-0); }
+.store-refresh-btn.spinning{ animation:remoteSpin .8s linear infinite; }
 @keyframes remoteSpin{ to{ transform:rotate(360deg); } }
-.app-card-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-.drop-zone{ border:1.5px dashed var(--border-strong); border-radius:var(--radius-md); padding:26px 16px; text-align:center; margin-bottom:18px; transition:border-color var(--dur-fast),background var(--dur-fast); }
-.drop-zone.drag-over{ border-color:var(--accent); background:var(--bg-1); }
-.drop-zone .dz-ic{ font-size:26px; margin-bottom:8px; }
-.drop-zone p{ font-size:12px; color:var(--text-1); margin-bottom:12px; line-height:1.6; }
-.template-row{ display:flex; align-items:center; gap:12px; }
+
+.store-row{ display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid var(--border); }
+.store-row:last-child{ border-bottom:none; }
+.store-icon{
+  width:52px; height:52px; border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center;
+  font-size:23px; flex-shrink:0; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -10px 14px rgba(0,0,0,.12);
+  border:1px solid rgba(0,0,0,.14);
+}
+.store-icon.system{ background:linear-gradient(160deg,var(--bg-3),var(--bg-2)) !important; border-color:var(--border-strong); color:var(--accent); }
+.store-row-body{ flex:1; min-width:0; }
+.store-row-body h4{ font-size:14.5px; font-weight:700; display:flex; align-items:baseline; gap:6px; }
+.store-row-body .store-ver{ font-size:10px; font-weight:600; color:var(--text-2); font-family:var(--font-mono); }
+.store-row-body p{ font-size:12px; color:var(--text-1); margin-top:2px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.store-row-meta{ font-size:10.5px; color:var(--text-2); margin-top:4px; font-family:var(--font-mono); }
+.store-row-actions{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.store-pill{
+  font-size:12.5px; font-weight:700; padding:7px 18px; border-radius:var(--radius-full);
+  background:var(--bg-2); color:var(--accent); border:1px solid var(--border-strong);
+  transition:filter var(--dur-fast), transform var(--dur-fast);
+}
+.store-pill:hover{ filter:brightness(1.1); }
+.store-pill:active{ transform:scale(.94); }
+.store-pill.get{ background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+.store-row-more{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-2); font-size:15px; background:transparent; flex-shrink:0; }
+.store-row-more:hover{ background:var(--bg-2); color:var(--text-0); }
+.store-dev-card{ display:flex; align-items:center; gap:12px; }
+
+/* ---------- Apple Watch 風グリッド ----------
+   インストール済み・未インストール（サンプルApp / リモートカタログ）を
+   分けず、システムAppも含めた「全App」を1枚の円形ハニカムに敷き詰め、
+   中心に近いほど大きく表示する。未インストールのものだけ少し暗くして
+   右下に + バッジを付け、タップでそのままインストール導線に入る。 */
+.watch-grid-section{ margin:0 0 26px; }
+.watch-grid-wrap{ display:flex; justify-content:center; padding:16px 0 6px; }
+.watch-grid{
+  position:relative; width:min(360px,86vw); aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle at 50% 40%, var(--bg-2), var(--bg-0) 78%);
+  border:1px solid var(--border-strong); box-shadow:var(--shadow-md), inset 0 0 46px rgba(0,0,0,.5);
+}
+.watch-cell{
+  position:absolute; display:flex; align-items:center; justify-content:center; border-radius:50%;
+  border:1px solid rgba(0,0,0,.16); box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.16);
+  cursor:pointer; padding:0; transition:transform .12s var(--ease), opacity var(--dur-fast); will-change:transform;
+}
+.watch-cell:active{ transform:scale(.9) !important; }
+.watch-cell.dim{ opacity:.42; }
+.watch-cell .wc-ic{ line-height:1; pointer-events:none; }
+.watch-cell .wc-badge{
+  position:absolute; right:-2px; bottom:-2px; width:38%; height:38%; min-width:15px; min-height:15px;
+  border-radius:50%; background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center;
+  font-size:9.5px; font-weight:800; border:2px solid var(--bg-0); pointer-events:none;
+}
+.watch-grid-hint{ text-align:center; font-size:10.5px; color:var(--text-2); margin-top:2px; }
 
 /* ---------- settings ---------- */
 .wallpaper-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:10px; }
@@ -1950,10 +2016,10 @@ function shade(hex, percent){
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }catch(e){ return hex; }
 }
-function iconGlyphHTML(app){
+function iconGlyphHTML(app, extraClass){
   const raw = app.color || '#7d7565';
   const bg = /^#[0-9a-fA-F]{3,8}$/.test(raw) ? raw : '#7d7565';
-  return '<div class="icon-glyph' + (app.system ? ' system' : '') + '" style="background:linear-gradient(155deg,' + bg + ',' + shade(bg, -18) + ')">' + escapeHtml(app.icon || '🧩') + '</div>';
+  return '<div class="icon-glyph' + (extraClass ? ' ' + extraClass : '') + (app.system ? ' system' : '') + '" style="background:linear-gradient(155deg,' + bg + ',' + shade(bg, -18) + ')">' + escapeHtml(app.icon || '🧩') + '</div>';
 }
 
 /* ---------------- desktop icon grid ---------------- */
@@ -2125,39 +2191,87 @@ const APP_TEMPLATE_SOURCE = `<!--GUIOS-APP {"id":"my-app","name":"マイアプ�
 `;
 
 let _storeContainerRef = null;
+let _storeQuery = '';
 function refreshStoreListIfOpen(){
-  if(_storeContainerRef && document.body.contains(_storeContainerRef)) renderStoreList(_storeContainerRef);
+  if(_storeContainerRef && document.body.contains(_storeContainerRef)) renderStoreBody(_storeContainerRef, _storeQuery);
 }
 
 function renderStoreApp(container){
   _storeContainerRef = container;
+  _storeQuery = '';
   container.innerHTML =
-    '<div class="app-page">' +
-      '<div class="page-head"><h2>🛒 機能ストア</h2></div>' +
-      '<div class="drop-zone" id="storeDrop">' +
-        '<div class="dz-ic">📄</div>' +
-        '<p>HTML ファイルをドラッグ&ドロップ、またはボタンから選択すると<br>そのままアプリとしてインストールされます。</p>' +
-        '<button class="btn" id="storePickBtn">ファイルから追加</button>' +
+    '<div class="app-page store-page">' +
+      '<div class="store-topbar"><h1 class="store-heading">App Store</h1></div>' +
+      '<div class="store-search-bar" id="storeSearchBar">' +
+        '<span class="store-search-ic">🔍</span>' +
+        '<input class="store-search-input" id="storeSearch" type="text" inputmode="search" placeholder="App を検索" autocomplete="off" autocorrect="off" spellcheck="false">' +
+        '<button class="store-search-clear hidden" id="storeSearchClear" aria-label="クリア">✕</button>' +
       '</div>' +
-      '<input class="text-input store-search" id="storeSearch" placeholder="アプリを検索">' +
-      '<div id="storeListRoot"></div>' +
-      '<div class="remote-title-row"><span>🌐 リモートカタログ</span><button class="remote-refresh-btn" id="storeRemoteRefresh" title="再読み込み">⟳</button></div>' +
-      '<div id="storeRemoteRoot"><div class="empty-hint">読み込み中…</div></div>' +
-      '<div class="section-title">開発者向け</div>' +
-      '<div class="card template-row">' +
-        '<div style="flex:1"><b style="font-size:12.5px">新規アプリのひな形をダウンロード</b>' +
-        '<div style="font-size:11.5px;color:var(--text-1);margin-top:3px;">SDKの使用例つき。編集してこのストアに追加できます。</div></div>' +
-        '<button class="btn secondary" id="storeTemplateBtn">取得</button>' +
-      '</div>' +
-      '<div class="card" style="margin-top:10px;">' +
-        '<b style="font-size:12.5px;">SDK クイックリファレンス</b>' +
-        '<div class="code-block" style="margin-top:8px;"></div>' +
-      '</div>' +
+      '<div id="storeBody"></div>' +
     '</div>';
 
-  renderStoreList(container);
+  const input = qs('#storeSearch', container);
+  const clearBtn = qs('#storeSearchClear', container);
+  const bar = qs('#storeSearchBar', container);
+  const doFilter = debounce(function(v){ _storeQuery = v; renderStoreBody(container, v); }, 120);
+  input.addEventListener('input', function(e){
+    clearBtn.classList.toggle('hidden', !e.target.value);
+    doFilter(e.target.value);
+  });
+  input.addEventListener('focus', function(){ bar.classList.add('focused'); });
+  input.addEventListener('blur', function(){ bar.classList.remove('focused'); });
+  clearBtn.addEventListener('click', function(){
+    input.value = ''; clearBtn.classList.add('hidden'); _storeQuery = '';
+    renderStoreBody(container, '');
+    input.focus();
+  });
 
-  const drop = qs('#storeDrop', container);
+  renderStoreBody(container, '');
+  // remote catalog loads async; if the person is already mid-search when it
+  // resolves, re-run the search so remote matches appear without a manual retype
+  RemoteCatalog.fetchCatalog().then(function(){
+    if(document.body.contains(container) && _storeQuery) renderStoreBody(container, _storeQuery);
+  });
+}
+
+function renderStoreBody(container, filter){
+  const body = qs('#storeBody', container);
+  if(!body) return;
+  const f = (filter || '').trim();
+  if(f) renderStoreSearchResults(container, body, f);
+  else renderStoreBrowse(container, body);
+}
+
+function renderStoreBrowse(container, body){
+  body.innerHTML =
+    '<div class="watch-grid-section" id="storeWatchGridSection">' +
+      '<div class="store-section-title">グリッド</div>' +
+      '<div class="watch-grid-wrap"><div class="watch-grid" id="storeWatchGrid"></div></div>' +
+      '<div class="watch-grid-hint">タップで開く・追加できます</div>' +
+    '</div>' +
+    '<div class="store-dropzone" id="storeDrop">' +
+      '<div class="store-dropzone-ic">📄</div>' +
+      '<p>HTML ファイルをドラッグ&ドロップ、またはボタンから選択すると<br>そのままアプリとしてインストールされます。</p>' +
+      '<button class="btn secondary" id="storePickBtn">ファイルから追加</button>' +
+    '</div>' +
+    '<div id="storeListRoot"></div>' +
+    '<div class="store-section-row">' +
+      '<span class="store-section-title">🌐 リモートカタログ</span>' +
+      '<button class="store-refresh-btn" id="storeRemoteRefresh" title="再読み込み">⟳</button>' +
+    '</div>' +
+    '<div id="storeRemoteRoot"><div class="empty-hint">読み込み中…</div></div>' +
+    '<div class="store-section-title">開発者向け</div>' +
+    '<div class="card store-dev-card">' +
+      '<div style="flex:1"><b style="font-size:12.5px">新規アプリのひな形をダウンロード</b>' +
+      '<div style="font-size:11.5px;color:var(--text-1);margin-top:3px;">SDKの使用例つき。編集してこのストアに追加できます。</div></div>' +
+      '<button class="btn secondary" id="storeTemplateBtn">取得</button>' +
+    '</div>' +
+    '<div class="card" style="margin-top:10px;">' +
+      '<b style="font-size:12.5px;">SDK クイックリファレンス</b>' +
+      '<div class="code-block" style="margin-top:8px;"></div>' +
+    '</div>';
+
+  const drop = qs('#storeDrop', body);
   drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('drag-over'); });
   drop.addEventListener('dragleave', function(){ drop.classList.remove('drag-over'); });
   drop.addEventListener('drop', function(e){
@@ -2165,64 +2279,100 @@ function renderStoreApp(container){
     const f = e.dataTransfer.files && e.dataTransfer.files[0];
     if(f) handleInstallFile(f);
   });
-  qs('#storePickBtn', container).addEventListener('click', function(){ $('install-file-input').click(); });
-  qs('#storeSearch', container).addEventListener('input', debounce(function(e){ renderStoreList(container, e.target.value); }, 120));
-  qs('#storeTemplateBtn', container).addEventListener('click', downloadAppTemplate);
-  qs('.code-block', container).textContent = SDK_REFERENCE_TEXT;
-  qs('#storeRemoteRefresh', container).addEventListener('click', function(){ renderRemoteCatalogList(container, true); });
+  qs('#storePickBtn', body).addEventListener('click', function(){ $('install-file-input').click(); });
+  qs('#storeTemplateBtn', body).addEventListener('click', downloadAppTemplate);
+  qs('.code-block', body).textContent = SDK_REFERENCE_TEXT;
+  qs('#storeRemoteRefresh', body).addEventListener('click', function(){ renderRemoteCatalogList(container, true); });
+
+  renderInstalledList(container);
   renderRemoteCatalogList(container);
 }
 
+/* kind: 'installed' | 'builtin' (one-tap sample) | 'remote' (from catalog.json) */
 function storeCardHTML(meta, kind){
-  const name = escapeHtml(meta.name), desc = escapeHtml(meta.description || '');
-  let actions;
-  if(kind === 'installed'){
-    actions =
-      '<button class="btn" data-store-act="open" data-app-id="' + meta.id + '">開く</button>' +
-      '<button class="btn secondary" data-store-act="source" data-app-id="' + meta.id + '">ソース</button>' +
-      '<button class="btn secondary" data-store-act="info" data-app-id="' + meta.id + '">情報</button>' +
-      (meta.system ? '' : '<button class="btn danger" data-store-act="uninstall" data-app-id="' + meta.id + '">削除</button>');
-  } else {
-    actions = '<button class="btn" data-store-act="install" data-app-id="' + meta.id + '">インストール</button>';
-  }
-  const metaLine = kind === 'installed' ? (meta.system ? 'システム' : (meta.builtin ? '内蔵アプリ' : '追加アプリ・' + fmtBytes(meta.size || 0))) : '内蔵アプリ';
-  return '<div class="app-card">' + iconGlyphHTML(meta) +
-    '<div class="app-card-body"><h4>' + name + ' <span class="pill">v' + escapeHtml(meta.version || '1.0.0') + '</span></h4>' +
+  const id = escapeHtml(meta.id), name = escapeHtml(meta.name), desc = escapeHtml(meta.description || '');
+  const isInstalled = kind === 'installed';
+  const actionBtn = isInstalled
+    ? '<button class="store-pill" data-store-act="open" data-app-id="' + id + '">開く</button>'
+    : kind === 'builtin'
+      ? '<button class="store-pill get" data-store-act="install" data-app-id="' + id + '">入手</button>'
+      : '<button class="store-pill get" data-remote-install="' + id + '">入手</button>';
+  const metaLine = isInstalled
+    ? (meta.system ? 'システム' : (meta.builtin ? '内蔵アプリ' : '追加アプリ・' + fmtBytes(meta.size || 0)))
+    : kind === 'builtin' ? '内蔵アプリ' : ('作者: ' + escapeHtml(meta.author || '不明'));
+  const more = isInstalled
+    ? '<button class="store-row-more" data-store-act="more" data-app-id="' + id + '" aria-label="その他">⋯</button>'
+    : '';
+  return '<div class="store-row">' + iconGlyphHTML(meta, 'store-icon') +
+    '<div class="store-row-body"><h4>' + name + '<span class="store-ver">v' + escapeHtml(meta.version || '1.0.0') + '</span></h4>' +
     '<p>' + desc + '</p>' +
-    '<div class="app-card-meta">' + metaLine + '</div>' +
-    '<div class="app-card-actions">' + actions + '</div></div></div>';
+    '<div class="store-row-meta">' + metaLine + '</div></div>' +
+    '<div class="store-row-actions">' + actionBtn + more + '</div></div>';
 }
 
-function renderStoreList(container, filter){
-  const root = qs('#storeListRoot', container);
-  if(!root) return;
-  const installed = AppRegistry.listInstalled().filter(function(a){ return !a.system; });
-  const availableBuiltins = BUILTIN_CATALOG.filter(function(b){ return !AppRegistry.isInstalled(b.id); });
-  const f = (filter || '').toLowerCase();
-  const matchName = function(n){ return !f || (n || '').toLowerCase().indexOf(f) !== -1; };
-
-  let html = '<div class="section-title">インストール済み (' + installed.length + ')</div>';
-  const filteredInstalled = installed.filter(function(a){ return matchName(a.name); });
-  if(!filteredInstalled.length){ html += '<div class="empty-hint">' + (installed.length ? '一致するアプリがありません' : 'まだアプリがインストールされていません') + '</div>'; }
-  else{ filteredInstalled.forEach(function(a){ html += storeCardHTML(a, 'installed'); }); }
-
-  const filteredAvail = availableBuiltins.filter(function(a){ return matchName(a.name); });
-  if(filteredAvail.length){
-    html += '<div class="section-title">サンプルアプリ（ワンタップで追加）</div>';
-    filteredAvail.forEach(function(a){ html += storeCardHTML(a, 'available'); });
-  }
-  root.innerHTML = html;
-
+function wireStoreRowActions(root, container){
   qsa('[data-store-act]', root).forEach(function(btn){
-    btn.addEventListener('click', function(){
+    btn.addEventListener('click', function(e){
       const act = btn.dataset.storeAct, id = btn.dataset.appId;
       if(act === 'open') launchApp(id);
       else if(act === 'install') installBuiltinFromStore(id, container);
-      else if(act === 'uninstall') requestUninstall(id).then(function(){ renderStoreList(container, qs('#storeSearch', container).value); });
-      else if(act === 'info') showAppInfoModal(id);
-      else if(act === 'source') showSourceModal(id);
+      else if(act === 'more') showStoreRowMenu(e, id);
     });
   });
+}
+
+function showStoreRowMenu(e, id){
+  const meta = AppRegistry.getMeta(id);
+  if(!meta) return;
+  const items = [
+    { icon:'ℹ️', label:'情報', onSelect:function(){ showAppInfoModal(id); } },
+    { icon:'📄', label:'ソース', onSelect:function(){ showSourceModal(id); } }
+  ];
+  if(!meta.system){
+    items.push({ sep:true });
+    items.push({ icon:'🗑️', label:'アンインストール', danger:true, onSelect:function(){ requestUninstall(id); } });
+  }
+  showContextMenu(e.clientX, e.clientY, items);
+}
+
+/* Single source of truth for "what apps exist, matching this filter" --
+   used by the installed/sample list, the remote-catalog-aware search
+   results, and the honeycomb grid alike, so the three views can never
+   disagree about what's installed vs. what's still available. */
+function storeAppGroups(filter){
+  const f = (filter || '').toLowerCase();
+  const matchName = function(n){ return !f || (n || '').toLowerCase().indexOf(f) !== -1; };
+  const installedAll = AppRegistry.listInstalled().filter(function(a){ return matchName(a.name); });
+  const builtins = BUILTIN_CATALOG.filter(function(b){ return !AppRegistry.isInstalled(b.id) && matchName(b.name); });
+  const remoteState = RemoteCatalog.getState();
+  const remote = remoteState.items.filter(function(e){ return !AppRegistry.isInstalled(e.id) && matchName(e.name); });
+  return { installedAll: installedAll, builtins: builtins, remote: remote, remoteState: remoteState };
+}
+function buildGridEntries(groups){
+  return [].concat(
+    groups.installedAll.map(function(a){ return { app: a, installed: true }; }),
+    groups.builtins.map(function(a){ return { app: a, installed: false }; }),
+    groups.remote.map(function(a){ return { app: a, installed: false }; })
+  );
+}
+
+function renderInstalledList(container){
+  const root = qs('#storeListRoot', container);
+  if(!root) return;
+  const groups = storeAppGroups('');
+  const installed = groups.installedAll.filter(function(a){ return !a.system; });
+
+  let html = '<div class="store-section-title">インストール済み（' + installed.length + '）</div>';
+  if(!installed.length){ html += '<div class="empty-hint">まだアプリがインストールされていません</div>'; }
+  else{ installed.forEach(function(a){ html += storeCardHTML(a, 'installed'); }); }
+
+  if(groups.builtins.length){
+    html += '<div class="store-section-title">サンプルApp（ワンタップで追加）</div>';
+    groups.builtins.forEach(function(a){ html += storeCardHTML(a, 'builtin'); });
+  }
+  root.innerHTML = html;
+  wireStoreRowActions(root, container);
+  renderWatchGrid(container, buildGridEntries(groups));
 }
 
 async function installBuiltinFromStore(id, container){
@@ -2230,20 +2380,11 @@ async function installBuiltinFromStore(id, container){
   if(!meta) return;
   renderDesktop($('desktop-search').value);
   renderDock();
-  renderStoreList(container, qs('#storeSearch', container).value);
+  refreshStoreListIfOpen();
   showToast({ title:'インストール完了', body: meta.name + ' を追加しました', icon: meta.icon });
 }
 
 /* ---------------- remote catalog UI (fetches GITHUB_CATALOG_URL) ---------------- */
-function remoteCardHTML(entry){
-  const name = escapeHtml(entry.name), desc = escapeHtml(entry.description || '');
-  return '<div class="app-card">' + iconGlyphHTML(entry) +
-    '<div class="app-card-body"><h4>' + name + ' <span class="pill">v' + escapeHtml(entry.version) + '</span></h4>' +
-    '<p>' + desc + '</p>' +
-    '<div class="app-card-meta">作者: ' + escapeHtml(entry.author) + '</div>' +
-    '<div class="app-card-actions"><button class="btn" data-remote-install="' + escapeHtml(entry.id) + '">インストール</button></div></div></div>';
-}
-
 async function renderRemoteCatalogList(container, force){
   const root = qs('#storeRemoteRoot', container);
   if(!root) return;
@@ -2256,6 +2397,9 @@ async function renderRemoteCatalogList(container, force){
   // the store window may have been closed while the fetch was in flight
   if(!document.body.contains(container) || !qs('#storeRemoteRoot', container)) return;
   if(refreshBtn) refreshBtn.classList.remove('spinning');
+  // the grid was built before this fetch resolved (it started with whatever
+  // was cached, possibly nothing) -- redraw it now that remote items are in
+  renderWatchGrid(container, buildGridEntries(storeAppGroups(_storeQuery)));
 
   if(state.status === 'error'){
     root.innerHTML =
@@ -2268,10 +2412,10 @@ async function renderRemoteCatalogList(container, force){
 
   const available = state.items.filter(function(e){ return !AppRegistry.isInstalled(e.id); });
   if(!available.length){
-    root.innerHTML = '<div class="empty-hint">' + (state.items.length ? 'カタログのアプリはすべてインストール済みです' : 'カタログにアプリがありません') + '</div>';
+    root.innerHTML = '<div class="empty-hint">' + (state.items.length ? 'カタログのAppはすべてインストール済みです' : 'カタログにAppがありません') + '</div>';
     return;
   }
-  root.innerHTML = available.map(remoteCardHTML).join('');
+  root.innerHTML = available.map(function(e){ return storeCardHTML(e, 'remote'); }).join('');
   qsa('[data-remote-install]', root).forEach(function(btn){
     btn.addEventListener('click', function(){
       const entry = state.items.find(function(e){ return e.id === btn.dataset.remoteInstall; });
@@ -2280,24 +2424,168 @@ async function renderRemoteCatalogList(container, force){
   });
 }
 
+/* unified live search across installed apps, one-tap samples and the
+   remote catalog -- mirrors iOS's Search tab: once there's a query, the
+   normal browse sections disappear and only matches are shown. */
+function renderStoreSearchResults(container, body, filter){
+  const groups = storeAppGroups(filter);
+  const installed = groups.installedAll.filter(function(a){ return !a.system; });
+  const builtins = groups.builtins;
+  const remoteMatches = groups.remote;
+
+  const total = installed.length + builtins.length + remoteMatches.length;
+  let html =
+    '<div class="watch-grid-section" id="storeWatchGridSection">' +
+      '<div class="store-section-title">グリッド</div>' +
+      '<div class="watch-grid-wrap"><div class="watch-grid" id="storeWatchGrid"></div></div>' +
+      '<div class="watch-grid-hint">タップで開く・追加できます</div>' +
+    '</div>' +
+    '<div class="store-section-title">検索結果' + (total ? '（' + total + '）' : '') + '</div>';
+  if(!total){
+    html += '<div class="empty-hint">「' + escapeHtml(filter) + '」に一致するAppが見つかりません' +
+      (groups.remoteState.status === 'loading' ? '<br><span style="font-size:10.5px;opacity:.75;">リモートカタログを確認中…</span>' : '') + '</div>';
+  } else {
+    installed.forEach(function(a){ html += storeCardHTML(a, 'installed'); });
+    builtins.forEach(function(a){ html += storeCardHTML(a, 'builtin'); });
+    remoteMatches.forEach(function(e){ html += storeCardHTML(e, 'remote'); });
+  }
+  body.innerHTML = html;
+  wireStoreRowActions(body, container);
+  qsa('[data-remote-install]', body).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const entry = remoteMatches.find(function(e){ return e.id === btn.dataset.remoteInstall; });
+      if(entry) installFromRemoteCatalog(entry, container, btn);
+    });
+  });
+  renderWatchGrid(container, buildGridEntries(groups));
+}
+
+/* ---------------- Apple Watch 風ハニカムグリッド ----------------
+   ホーム画面の円形ハニカムを模したビュー。インストール済み／未インス
+   トールを分けず、システムAppも含めた「全App」を1枚の円に敷き詰め、
+   中心に近いApp（配列の先頭）ほど大きく表示する。未インストールのApp
+   は少し暗くし、右下に + バッジを付けてタップ時にインストール導線へ
+   進むことが分かるようにする。 */
+function watchCellAction(entry, container){
+  const id = entry.app.id;
+  if(entry.installed){ launchApp(id); return; }
+  const builtin = BUILTIN_CATALOG.find(function(b){ return b.id === id; });
+  if(builtin){ installBuiltinFromStore(id, container); return; }
+  const remote = RemoteCatalog.getState().items.find(function(e){ return e.id === id; });
+  if(remote) installFromRemoteCatalog(remote, container, null);
+}
+
+/* Column pitch as a fraction of the circle's radius; the row pitch is the
+   classic hex-packing ratio (sqrt(3)/2) of that, which is what makes every
+   neighbour -- same-row or offset-row -- land the same distance apart. */
+const WATCH_CELL = 0.34;
+const WATCH_ROWH = WATCH_CELL * 0.866;
+
+/* Lays out up to n slots inside a unit circle (radius 1) in a honeycomb
+   pattern -- alternating rows are offset by half a cell, and each row's
+   width is capped by the circle's chord at that height (sqrt(1-y^2)),
+   which is what makes the result read as a circle rather than a grid.
+   Slots are returned centre-out so the caller can hand it apps in
+   priority order and have the "most important" ones land in the middle. */
+function layoutHoneycomb(n){
+  const slots = [];
+  for(let row = -5; row <= 5; row++){
+    const y = row * WATCH_ROWH;
+    if(Math.abs(y) > 1.04) continue;
+    const halfw = Math.sqrt(Math.max(0, 1 - y * y));
+    const cols = Math.max(1, Math.floor((halfw * 2) / WATCH_CELL) + 1);
+    const offset = (((row % 2) + 2) % 2 === 1) ? WATCH_CELL / 2 : 0;
+    const start = -((cols - 1) / 2) * WATCH_CELL + offset;
+    for(let c = 0; c < cols; c++){
+      const x = start + c * WATCH_CELL;
+      if(Math.hypot(x, y) > 1.04) continue;
+      slots.push({ x: x, y: y });
+    }
+  }
+  slots.sort(function(a, b){ return Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y); });
+  return slots.slice(0, n);
+}
+
+function renderWatchGrid(container, entries){
+  const grid = qs('#storeWatchGrid', container);
+  if(!grid) return;
+  const section = grid.closest('.watch-grid-section');
+  if(!entries.length){ if(section) section.style.display = 'none'; return; }
+  if(section) section.style.display = '';
+
+  grid.innerHTML = '';
+  const slots = layoutHoneycomb(entries.length);
+  const size = grid.clientWidth || 340;
+  const r = size / 2;
+  const cellPitch = WATCH_CELL * r;      // px distance to the nearest neighbour slot
+  const iconMax = cellPitch * 0.9;       // icon diameter at full scale, with a small gap
+  slots.forEach(function(slot, i){
+    const entry = entries[i];
+    if(!entry) return;
+    const app = entry.app;
+    const dist = Math.hypot(slot.x, slot.y);
+    const scale = 1 - dist * 0.42;
+    const diameter = Math.max(20, Math.round(iconMax * scale));
+    const cx = r + slot.x * r - diameter / 2;
+    const cy = r + slot.y * r - diameter / 2;
+    const raw = app.color || '#7d7565';
+    const bg = /^#[0-9a-fA-F]{3,8}$/.test(raw) ? raw : '#7d7565';
+    const btn = document.createElement('button');
+    btn.className = 'watch-cell' + (entry.installed ? '' : ' dim');
+    btn.style.width = diameter + 'px';
+    btn.style.height = diameter + 'px';
+    btn.style.left = cx + 'px';
+    btn.style.top = cy + 'px';
+    btn.style.fontSize = Math.round(diameter * 0.46) + 'px';
+    btn.style.background = 'linear-gradient(155deg,' + bg + ',' + shade(bg, -18) + ')';
+    btn.title = app.name + (entry.installed ? '' : '（未インストール）');
+    btn.innerHTML = '<span class="wc-ic">' + escapeHtml(app.icon || '🧩') + '</span>' +
+      (entry.installed ? '' : '<span class="wc-badge">+</span>');
+    btn.addEventListener('click', function(){ watchCellAction(entry, container); });
+    grid.appendChild(btn);
+  });
+
+  // pointer-follow "lens": nearby icons swell the closer the pointer gets,
+  // echoing how apps enlarge as the Digital Crown scrolls them toward centre
+  let raf = null;
+  grid.onpointermove = function(e){
+    if(raf) return;
+    raf = requestAnimationFrame(function(){
+      raf = null;
+      const rect = grid.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      qsa('.watch-cell', grid).forEach(function(cell){
+        const ccx = cell.offsetLeft + cell.offsetWidth / 2, ccy = cell.offsetTop + cell.offsetHeight / 2;
+        const d = Math.hypot(mx - ccx, my - ccy);
+        const boost = Math.max(0, 1 - d / (rect.width * 0.2));
+        cell.style.transform = boost > 0.02 ? 'scale(' + (1 + boost * 0.55) + ')' : '';
+        cell.style.zIndex = boost > 0.02 ? '5' : '';
+      });
+    });
+  };
+  grid.onpointerleave = function(){
+    qsa('.watch-cell', grid).forEach(function(cell){ cell.style.transform = ''; cell.style.zIndex = ''; });
+  };
+}
+
 async function installFromRemoteCatalog(entry, container, btn){
   if(btn){ btn.disabled = true; btn.textContent = '取得中…'; }
   try{
     const res = await fetch(entry.url, { cache: 'no-store' });
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const code = await res.text();
-    if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
+    if(btn){ btn.disabled = false; btn.textContent = '入手'; }
     showInstallConfirmModal(code, {
       id: entry.id, icon: entry.icon, name: entry.name, description: entry.description,
       version: entry.version, author: entry.author, color: entry.color
     }, {
       sourceLabel: 'リモートカタログから取得',
-      onInstalled: function(){ renderRemoteCatalogList(container); }
+      onInstalled: function(){ refreshStoreListIfOpen(); }
     });
   }catch(err){
     console.error('Remote fetch failed:', err);
     showToast({ title:'取得失敗', body: entry.name + ' を取得できませんでした', type:'error' });
-    if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
+    if(btn){ btn.disabled = false; btn.textContent = '入手'; }
   }
 }
 
