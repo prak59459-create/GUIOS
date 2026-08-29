@@ -744,6 +744,64 @@ function shade(hex, pct){
 }
 function isHexColor(v){ return /^#[0-9a-fA-F]{3,8}$/.test(String(v || '')); }
 
+/* ---------------- multi-monitor / second screen ----------------
+   A browser page can't literally span two physical displays, so "two
+   screens" here means: open a second top-level window running this same
+   page, and keep the two in sync over BroadcastChannel (same VFS-backed
+   storage, same installed apps, same config -- but each screen keeps its
+   own independent set of open app windows and virtual desktops, exactly
+   like two real monitors each showing their own workspace). When the
+   experimental Window Management API is available and already permitted,
+   the new window is placed directly on the other physical display;
+   otherwise it opens as a normal window the person can drag over
+   themselves. */
+const MultiScreen = (function(){
+  const CHANNEL = 'n5-sync-v1';
+  let channel = null;
+  try{ channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null; }catch(e){ channel = null; }
+
+  let isSecondary = false;
+  try{ isSecondary = new URLSearchParams(location.search).get('screen') === '2'; }catch(e){}
+
+  function broadcast(type){
+    if(!channel) return;
+    try{ channel.postMessage({ type: type }); }catch(e){}
+  }
+  function onMessage(handler){
+    if(!channel) return;
+    channel.addEventListener('message', function(e){ if(e && e.data && e.data.type) handler(e.data.type); });
+  }
+
+  async function openSecondScreen(){
+    const url = location.origin + location.pathname + '?screen=2';
+    /* getScreenDetails() itself triggers a permission prompt the first
+       time it's called, which would stall this click handler waiting on
+       the person to answer it. So only ever call it when the permission
+       was already granted in an earlier visit; every other case (never
+       asked, denied, or the API missing entirely) falls straight through
+       to a plain window.open() the person can drag to the other monitor
+       by hand. */
+    try{
+      if('getScreenDetails' in window && navigator.permissions && navigator.permissions.query){
+        const status = await navigator.permissions.query({ name: 'window-management' });
+        if(status.state === 'granted'){
+          const details = await window.getScreenDetails();
+          const other = details.screens.find(function(s){ return s !== details.currentScreen; });
+          if(other){
+            window.open(url, 'n5-secondary',
+              'left=' + other.availLeft + ',top=' + other.availTop + ',width=' + other.availWidth + ',height=' + other.availHeight);
+            return 'placed';
+          }
+        }
+      }
+    }catch(e){ /* API unsupported, or this browser doesn't recognize the permission name */ }
+    const w = window.open(url, 'n5-secondary');
+    return w ? 'opened' : 'blocked';
+  }
+
+  return { isSecondary: isSecondary, hasChannel: !!channel, openSecondScreen: openSecondScreen, broadcast: broadcast, onMessage: onMessage };
+})();
+
 /* ---------------- tiered storage backend ----------------
    window.storage (host-provided) → localStorage → in-memory.
    The VFS sits on top of whichever one is available, so the
@@ -1185,6 +1243,7 @@ const Config = (function(){
     data = Object.assign({}, data, patch || {});
     if(!Boot.isSafe()) await VFS.writeJSON('/System/config.json', data);
     apply();
+    MultiScreen.broadcast('config-changed');
     return data;
   }
   /* Re-reads config.json from disk. Called by the Files app and the
@@ -1355,7 +1414,7 @@ const Registry = (function(){
     if(pruned.length) await save();
     return { count: index.length, pruned };
   }
-  async function save(){ await VFS.writeJSON('/System/registry.json', index); }
+  async function save(){ await VFS.writeJSON('/System/registry.json', index); MultiScreen.broadcast('apps-changed'); }
 
   function listUser(){ return index.slice(); }
   function listAll(){
@@ -4808,10 +4867,16 @@ $('tb-term').addEventListener('click', function(){ launchApp('terminal'); });
 $('tb-settings').addEventListener('click', function(){ launchApp('settings'); });
 
 /* ---------------- desktop interactions ---------------- */
+async function openSecondScreenFlow(){
+  const result = await MultiScreen.openSecondScreen();
+  if(result === 'placed') showToast({ title:'新しい画面を開きました', body:'2台目のディスプレイに配置しました', icon:'🖥' });
+  else if(result === 'opened') showToast({ title:'新しい画面を開きました', body:'ウィンドウを2台目のモニターへドラッグしてください', icon:'🖥' });
+  else showToast({ title:'開けませんでした', body:'ポップアップがブロックされている可能性があります', type:'error' });
+}
 $('desk').addEventListener('contextmenu', function(e){
   if(e.target.closest('.tile')) return;
   e.preventDefault();
-  showContextMenu(e.clientX, e.clientY, [
+  const items = [
     { icon:'🗂', label:'ファイルを開く', onSelect:function(){ launchApp('files'); } },
     { icon:'▶', label:'ターミナル', onSelect:function(){ launchApp('terminal'); } },
     { sep:true },
@@ -4827,7 +4892,12 @@ $('desk').addEventListener('contextmenu', function(e){
       } },
     { icon:'⚙', label:'設定', onSelect:function(){ launchApp('settings'); } },
     { icon:'⚡', label:'UEFI Setup を開く', onSelect:function(){ openSetupFromOS(); } }
-  ]);
+  ];
+  if(!MultiScreen.isSecondary && !Boot.isSafe() && Config.resolveMode() === 'desktop'){
+    items.push({ sep:true });
+    items.push({ icon:'🖥', label:'新しい画面を開く（マルチモニター）', onSelect:openSecondScreenFlow });
+  }
+  showContextMenu(e.clientX, e.clientY, items);
 });
 (function(){
   const dl = $('desk-layer');
@@ -4952,8 +5022,25 @@ function finish(){
   if(Boot.isSafe()){
     showToast({ title:'セーフモードで起動しました', body:'サードパーティアプリとカスタムテーマは無効です。修復後、UEFI Setup の Boot Target を戻してください。', icon:'⚠', type:'warn', ttl:9000 });
   }
+  if(MultiScreen.isSecondary) document.title = OS_NAME + ' — 第2画面';
   runAutostart();
 }
+/* Keep every open screen in sync: an app install/uninstall or a config
+   change on one screen re-reads the shared VFS-backed storage and
+   repaints here too, without touching this screen's own open windows or
+   virtual desktops. */
+MultiScreen.onMessage(function(type){
+  if(type === 'apps-changed'){
+    /* VFS caches file nodes in memory after mount(), so a write on another
+       screen doesn't appear here until we re-read the shared store. */
+    VFS.mount().then(Registry.load).then(function(){
+      renderDesktop();
+      if(typeof refreshStore === 'function') refreshStore();
+    });
+  } else if(type === 'config-changed'){
+    Config.reload();
+  }
+});
 /* Autostart is skipped entirely in safe mode -- an app that crashes the
    shell on launch would otherwise make the machine unusable in exactly
    the mode meant to recover it. */
