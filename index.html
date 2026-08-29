@@ -130,6 +130,13 @@ a{ color:var(--accent); }
 #topbar-appname{ font-size:12.5px; font-weight:600; color:var(--text-0); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tb-sep{ width:1px; height:14px; background:var(--border-strong); }
 .tb-spacer{ flex:1; }
+#desktop-switcher{ display:flex; align-items:center; gap:5px; margin-left:14px; flex-shrink:0; }
+.desk-dot{ width:7px; height:7px; border-radius:50%; background:var(--text-2); cursor:pointer; transition:background var(--dur-fast), width var(--dur-fast), border-radius var(--dur-fast); }
+.desk-dot:hover{ background:var(--text-1); }
+.desk-dot.active{ background:var(--accent); width:16px; border-radius:4px; }
+.desk-add-btn{ width:15px; height:15px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; color:var(--text-2); background:var(--bg-2); cursor:pointer; flex-shrink:0; }
+.desk-add-btn:hover{ color:var(--text-0); background:var(--bg-3); }
+html[data-mode="mobile"] #desktop-switcher{ display:none; }
 .tb-btn{ width:26px; height:26px; border-radius:var(--radius-xs); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-1); transition:background var(--dur-fast); }
 .tb-btn:hover{ background:var(--bg-2); color:var(--text-0); }
 #topbar-clock{ font-family:var(--font-mono); font-size:12px; color:var(--text-1); font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -205,6 +212,7 @@ a{ color:var(--accent); }
 .win.dragging,.win.resizing{ transition:none !important; user-select:none; }
 .win.focused{ border-color:var(--border-strong); box-shadow:var(--shadow-lg), 0 0 0 1px var(--accent); }
 .win.minimized{ opacity:0; transform:scale(.85) translateY(70px); pointer-events:none; }
+.win.on-other-desktop{ display:none; }
 .win.snapped-preview{ background:var(--accent); opacity:.16; border:2px dashed var(--accent); pointer-events:none; }
 .win-titlebar{
   display:flex; align-items:center; gap:10px; padding:0 12px; height:38px; flex-shrink:0; cursor:grab;
@@ -462,6 +470,7 @@ html[data-theme="light"] #modal-backdrop{ background:rgba(36,31,22,.35); }
     <span class="tb-brand"><b>G</b>UIOS</span>
     <div class="tb-sep"></div>
     <span id="topbar-appname">ホーム</span>
+    <div id="desktop-switcher"></div>
     <div class="tb-spacer"></div>
     <button class="tb-btn" id="topbar-lock-btn" title="ロック">🔒</button>
     <span id="topbar-clock">00:00</span>
@@ -1410,6 +1419,74 @@ const RemoteCatalog = (function(){
 </script>
 
 <script>
+/* ---------------- virtual desktops ----------------
+   Each window belongs to exactly one desktop (see WindowManager.create /
+   syncDesktopVisibility). Switching desktops never destroys or reloads a
+   window -- it's purely a display:none toggle on .win elements plus which
+   dock/topbar affordances are active, so a running app's iframe (and its
+   state) survives being on a desktop that isn't showing. */
+const Desktops = (function(){
+  const MAX = 6;
+  const DEFAULT_ONE = [{ id: 'desk-1', name: 'デスクトップ 1' }];
+  let list = DEFAULT_ONE.slice();
+  let activeId = list[0].id;
+  const listeners = [];
+
+  async function load(){
+    const saved = await StorageBackend.getJSON('os:desktops', null);
+    if(saved && Array.isArray(saved.list) && saved.list.length){
+      list = saved.list;
+      activeId = list.some(function(d){ return d.id === saved.activeId; }) ? saved.activeId : list[0].id;
+    }
+  }
+  async function persist(){ await StorageBackend.setJSON('os:desktops', { list: list, activeId: activeId }); }
+  function notify(){ listeners.forEach(function(fn){ try{ fn(); }catch(e){} }); }
+  function onChange(fn){ listeners.push(fn); }
+
+  function all(){ return list.slice(); }
+  function active(){ return activeId; }
+  function indexOf(id){ return list.findIndex(function(d){ return d.id === id; }); }
+
+  async function add(){
+    if(list.length >= MAX) return null;
+    const d = { id: uid('desk'), name: 'デスクトップ ' + (list.length + 1) };
+    list.push(d);
+    activeId = d.id;
+    await persist();
+    notify();
+    return d;
+  }
+  async function remove(id){
+    if(list.length <= 1) return false;
+    const idx = indexOf(id);
+    if(idx === -1) return false;
+    list.splice(idx, 1);
+    if(activeId === id) activeId = list[Math.max(0, idx - 1)].id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchTo(id){
+    if(id === activeId || indexOf(id) === -1) return false;
+    activeId = id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchByOffset(delta){
+    const idx = indexOf(activeId);
+    if(idx === -1) return false;
+    return switchTo(list[(idx + delta + list.length) % list.length].id);
+  }
+
+  return {
+    MAX: MAX, load: load, all: all, active: active, indexOf: indexOf,
+    add: add, remove: remove, switchTo: switchTo, switchByOffset: switchByOffset, onChange: onChange
+  };
+})();
+</script>
+
+<script>
 /* ---------------- window manager ----------------
    Unified pointer-events drag/resize (mouse+touch+pen alike).
    Desktop mode: floating, draggable, resizable, edge-snap windows.
@@ -1482,11 +1559,12 @@ const WindowManager = (function(){
       id: id, appId: opts.appId, el: el, system: !!opts.system,
       iframeEl: (opts.contentEl && opts.contentEl.tagName === 'IFRAME') ? opts.contentEl : null,
       title: opts.title || '', icon: opts.icon || '', state: 'normal', rect: rect, preMaxRect: null,
-      lastPongAt: Date.now(), unresponsive: false
+      lastPongAt: Date.now(), unresponsive: false, desktopId: Desktops.active()
     };
     wins.push(win);
     applyRect(win);
     bindWindowEvents(win);
+    syncDesktopVisibility();
     focus(id);
     return win;
   }
@@ -1512,6 +1590,27 @@ const WindowManager = (function(){
     titlebar.addEventListener('dblclick', function(e){
       if(isMobile() || e.target.closest('[data-act]')) return;
       toggleMaximize(w.id);
+    });
+    titlebar.addEventListener('contextmenu', function(e){
+      if(e.target.closest('[data-act]') || isMobile()) return;
+      e.preventDefault();
+      focus(w.id);
+      const desks = Desktops.all();
+      const items = [];
+      if(desks.length > 1){
+        desks.forEach(function(d){
+          if(d.id === w.desktopId) return;
+          items.push({ icon: '🖥️', label: d.name + ' へ移動', onSelect: function(){ moveToDesktop(w.id, d.id); } });
+        });
+        items.push({ sep: true });
+      }
+      items.push({ icon: '⤢', label: w.state === 'maximized' ? '元のサイズに戻す' : '最大化', onSelect: function(){ toggleMaximize(w.id); } });
+      items.push({ icon: '—', label: '最小化', onSelect: function(){ toggleMinimize(w.id); } });
+      if(!w.system){
+        items.push({ sep: true });
+        items.push({ icon: '✕', label: '閉じる', danger: true, onSelect: function(){ close(w.id); } });
+      }
+      showContextMenu(e.clientX, e.clientY, items);
     });
     qsa('.win-resize', w.el).forEach(function(handle){
       handle.addEventListener('pointerdown', function(e){
@@ -1642,6 +1741,11 @@ const WindowManager = (function(){
 
   function focus(id){
     const w = byId(id); if(!w) return;
+    /* Clicking a dock icon (or anything else) for a window parked on a
+       different desktop should bring you to it, the same way clicking a
+       running app in the macOS dock switches Spaces -- otherwise "focus"
+       would silently do nothing visible. */
+    if(w.desktopId && w.desktopId !== Desktops.active()) Desktops.switchTo(w.desktopId);
     focusedId = id;
     w.el.style.zIndex = String(++zTop);
     wins.forEach(function(x){ x.el.classList.toggle('focused', x.id === id); });
@@ -1650,6 +1754,23 @@ const WindowManager = (function(){
     updateTopbarTitle();
     try{ if(w.iframeEl && w.iframeEl.contentWindow) w.iframeEl.contentWindow.focus(); }catch(e){}
   }
+
+  function syncDesktopVisibility(){
+    const active = Desktops.active();
+    wins.forEach(function(w){ w.el.classList.toggle('on-other-desktop', w.desktopId !== active); });
+    updateDockRunningState();
+    updateTopbarTitle();
+  }
+  function moveToDesktop(id, desktopId){
+    const w = byId(id); if(!w || w.desktopId === desktopId) return false;
+    w.desktopId = desktopId;
+    syncDesktopVisibility();
+    return true;
+  }
+  /* Windows on the desktop that just became active also need their running
+     dot / topbar title refreshed even when nothing was explicitly focused
+     on it yet (e.g. switching to an empty desktop). */
+  Desktops.onChange(syncDesktopVisibility);
 
   function close(id){
     const w = byId(id); if(!w) return;
@@ -1709,7 +1830,7 @@ const WindowManager = (function(){
   function updateTopbarTitle(){
     const w = focused();
     const el = $('topbar-appname');
-    if(el) el.textContent = w ? w.title : 'ホーム';
+    if(el) el.textContent = (w && w.desktopId === Desktops.active()) ? w.title : 'ホーム';
   }
   function closeAllForApp(appId){
     wins.filter(function(w){ return w.appId === appId; }).forEach(function(w){ close(w.id); });
@@ -1759,7 +1880,7 @@ const WindowManager = (function(){
   function snapFocused(zone){
     if(isMobile()) return false;
     const w = focused();
-    if(!w || w.system) return false;
+    if(!w || w.system || w.desktopId !== Desktops.active()) return false;
     commitSnap(w, zone);
     persistGeometry(w);
     return true;
@@ -1769,7 +1890,8 @@ const WindowManager = (function(){
     create: create, focus: focus, close: close, toggleMinimize: toggleMinimize, toggleMaximize: toggleMaximize,
     byId: byId, byAppId: byAppId, byIframeWindow: byIframeWindow, all: all, focused: focused,
     loadGeometry: loadGeometry, updateDockRunningState: updateDockRunningState, closeAllForApp: closeAllForApp,
-    relayoutForModeChange: relayoutForModeChange, notePong: notePong, snapFocused: snapFocused
+    relayoutForModeChange: relayoutForModeChange, notePong: notePong, snapFocused: snapFocused,
+    syncDesktopVisibility: syncDesktopVisibility, moveToDesktop: moveToDesktop
   };
 })();
 </script>
@@ -1921,7 +2043,7 @@ window.addEventListener('message', async function(e){
       const t = win.el.querySelector('.ttext'); if(t) t.textContent = win.title;
       WindowManager.updateDockRunningState();
       const f = WindowManager.focused();
-      if(f && f.id === win.id){ const el = $('topbar-appname'); if(el) el.textContent = win.title; }
+      if(f && f.id === win.id && win.desktopId === Desktops.active()){ const el = $('topbar-appname'); if(el) el.textContent = win.title; }
       reply(true);
     } else if(action === 'close'){
       WindowManager.close(win.id); reply(true);
@@ -2067,6 +2189,31 @@ function showContextMenu(x, y, items){
 }
 function hideContextMenu(){ $('ctxmenu').classList.add('hidden'); }
 document.addEventListener('click', function(e){ if(!e.target.closest('#ctxmenu')) hideContextMenu(); });
+
+/* ---------------- virtual desktop switcher (topbar) ---------------- */
+function renderDesktopSwitcher(){
+  const el = $('desktop-switcher');
+  if(!el) return;
+  const desks = Desktops.all(), active = Desktops.active();
+  let html = desks.map(function(d){
+    return '<div class="desk-dot' + (d.id === active ? ' active' : '') + '" data-desk="' + d.id + '" title="' + escapeHtml(d.name) + '"></div>';
+  }).join('');
+  if(desks.length < Desktops.MAX) html += '<div class="desk-add-btn" id="deskAddBtn" title="新しいデスクトップを追加">＋</div>';
+  el.innerHTML = html;
+  qsa('.desk-dot', el).forEach(function(dot){
+    dot.addEventListener('click', function(){ Desktops.switchTo(dot.dataset.desk); });
+    dot.addEventListener('contextmenu', function(e){
+      e.preventDefault();
+      if(desks.length <= 1) return;
+      showContextMenu(e.clientX, e.clientY, [
+        { icon: '🗑️', label: 'このデスクトップを削除', danger: true, onSelect: function(){ Desktops.remove(dot.dataset.desk); } }
+      ]);
+    });
+  });
+  const addBtn = $('deskAddBtn');
+  if(addBtn) addBtn.addEventListener('click', function(){ Desktops.add(); });
+}
+Desktops.onChange(renderDesktopSwitcher);
 
 /* ---------------- color helper for two-tone icon tiles ---------------- */
 function shade(hex, percent){
@@ -2995,12 +3142,16 @@ document.addEventListener('keydown', function(e){
   const mod = e.metaKey || e.ctrlKey;
   if(mod && (e.key === 'w' || e.key === 'W')){
     const f = WindowManager.focused();
-    if(f && !f.system){ e.preventDefault(); WindowManager.close(f.id); }
+    if(f && !f.system && f.desktopId === Desktops.active()){ e.preventDefault(); WindowManager.close(f.id); }
   }
-  /* Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
-     to a half of the screen (or maximizes on ↑), same geometry the drag
-     ghost previews. */
-  if(mod && e.key === 'ArrowLeft'){ if(WindowManager.snapFocused('left')) e.preventDefault(); }
+  /* Ctrl/Cmd+Alt+arrow switches virtual desktops (checked first so the
+     Alt modifier doesn't fall through to the plain split-view shortcuts
+     below). Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the
+     focused window to a half of the screen (or maximizes on ↑), same
+     geometry the drag ghost previews. */
+  if(mod && e.altKey && e.key === 'ArrowLeft'){ e.preventDefault(); Desktops.switchByOffset(-1); }
+  else if(mod && e.altKey && e.key === 'ArrowRight'){ e.preventDefault(); Desktops.switchByOffset(1); }
+  else if(mod && e.key === 'ArrowLeft'){ if(WindowManager.snapFocused('left')) e.preventDefault(); }
   else if(mod && e.key === 'ArrowRight'){ if(WindowManager.snapFocused('right')) e.preventDefault(); }
   else if(mod && e.key === 'ArrowUp'){ if(WindowManager.snapFocused('top')) e.preventDefault(); }
 });
@@ -3029,6 +3180,8 @@ async function boot(){
     await bootLog('settings loaded (theme=' + Settings.get().theme + ')', 'ok');
     await AppRegistry.loadIndex();
     await bootLog('app registry ready — ' + AppRegistry.listInstalled().length + ' package(s)', 'ok');
+    await Desktops.load();
+    await bootLog('desktops ready — ' + Desktops.all().length + ' space(s)', 'ok');
     await bootLog('window manager online', 'ok');
     await bootLog('starting shell…', 'ok');
     finishBoot();
@@ -3045,6 +3198,7 @@ function finishBoot(){
   $('shell').classList.add('active');
   renderDesktop();
   renderDock();
+  renderDesktopSwitcher();
   updateClocks();
   if(Settings.get().lockEnabled) showLockScreen();
 }
@@ -3053,6 +3207,7 @@ $('boot-skip').addEventListener('click', async function(){
   $('boot-skip').style.display = 'none';
   try{ await Settings.load(); }catch(e){}
   try{ await AppRegistry.loadIndex(); }catch(e){}
+  try{ await Desktops.load(); }catch(e){}
   finishBoot();
 });
 
