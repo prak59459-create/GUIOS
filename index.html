@@ -1715,13 +1715,39 @@ const WM = (function(){
     hideSnapGhost();
     drag = null;
   });
+  /* Half-, quarter- and full-screen targets by zone name -- shared by the
+     live drag-to-edge snap zones below and by zoneRect(), which the
+     Cmd/Ctrl+arrow keyboard shortcuts use, so a keyboard snap always
+     lands exactly where the drag ghost would have shown. */
+  function zoneRect(kind){
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
+    const halfW = Math.round(vw / 2), halfH = Math.round((vh - tbh) / 2);
+    switch(kind){
+      case 'max': return { x:0, y:0, w:vw, h:vh - tbh, kind:kind };
+      case 'left': return { x:0, y:0, w:halfW, h:vh - tbh, kind:kind };
+      case 'right': return { x:vw - halfW, y:0, w:halfW, h:vh - tbh, kind:kind };
+      case 'top-left': return { x:0, y:0, w:halfW, h:halfH, kind:kind };
+      case 'top-right': return { x:vw - halfW, y:0, w:halfW, h:halfH, kind:kind };
+      case 'bottom-left': return { x:0, y:vh - tbh - halfH, w:halfW, h:halfH, kind:kind };
+      case 'bottom-right': return { x:vw - halfW, y:vh - tbh - halfH, w:halfW, h:halfH, kind:kind };
+      default: return null;
+    }
+  }
   function snapZone(x, y){
     if(isMobile()) return null;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
-    if(y < 14) return { x:0, y:0, w:vw, h:vh - tbh, kind:'max' };
-    if(x < 14) return { x:0, y:0, w:Math.round(vw/2), h:vh - tbh, kind:'left' };
-    if(x > vw - 14) return { x:Math.round(vw/2), y:0, w:Math.round(vw/2), h:vh - tbh, kind:'right' };
+    const edge = 14, corner = 70;
+    const nearL = x <= edge, nearR = x >= vw - edge, nearT = y < edge;
+    const cornerL = x <= corner, cornerR = x >= vw - corner;
+    const cornerT = y <= corner, cornerB = y >= vh - corner;
+    if(cornerT && cornerL) return zoneRect('top-left');
+    if(cornerT && cornerR) return zoneRect('top-right');
+    if(cornerB && cornerL) return zoneRect('bottom-left');
+    if(cornerB && cornerR) return zoneRect('bottom-right');
+    if(nearT) return zoneRect('max');
+    if(nearL) return zoneRect('left');
+    if(nearR) return zoneRect('right');
     return null;
   }
   function showSnapGhost(x, y){
@@ -1735,10 +1761,27 @@ const WM = (function(){
   function commitSnap(w, x, y){
     const zn = snapZone(x, y);
     if(!zn) return;
+    applySnapZone(w, zn);
+  }
+  function applySnapZone(w, zn){
     if(zn.kind === 'max'){ w.pre = Object.assign({}, w.rect); w.state = 'max'; applyRect(w); return; }
     w.state = 'normal';
     w.rect = { x:zn.x, y:zn.y, w:zn.w, h:zn.h };
     applyRect(w);
+  }
+  /* Keyboard equivalent of dragging a window to an edge. */
+  function snapFocused(kind){
+    if(isMobile()) return false;
+    const w = focused();
+    /* Dragging a window to an edge already snaps it regardless of whether
+       it's a "system" app (files/terminal/editor are all just windows to
+       the person using them), so the keyboard shortcut shouldn't be more
+       restrictive than the mouse. */
+    if(!w) return false;
+    const zn = zoneRect(kind);
+    if(!zn) return false;
+    applySnapZone(w, zn);
+    return true;
   }
 
   function relayout(){ wins.forEach(function(w){ applyRect(w); }); }
@@ -1782,7 +1825,7 @@ const WM = (function(){
       bar.appendChild(el);
     });
   }
-  return { create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused, relayout, notePong, renderTasks };
+  return { create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused, relayout, notePong, renderTasks, snapFocused };
 })();
 </script>
 <script>
@@ -4681,6 +4724,12 @@ document.addEventListener('keydown', function(e){
      stuck". Escape alone is taken by dialogs, so the combo is checked
      before the plain-Escape handling above can swallow it. */
   if(mod && e.shiftKey && e.key === 'Escape'){ e.preventDefault(); launchApp('taskmgr'); }
+  /* Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
+     to a half of the screen (or maximizes on ↑), same geometry the drag
+     ghost previews. */
+  if(mod && e.key === 'ArrowLeft'){ if(WM.snapFocused('left')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowRight'){ if(WM.snapFocused('right')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowUp'){ if(WM.snapFocused('max')) e.preventDefault(); }
 });
 
 window.addEventListener('resize', debounce(function(){
