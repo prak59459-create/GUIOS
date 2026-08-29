@@ -1103,6 +1103,64 @@ function safeJSONParse(s, fallback){
   try{ return JSON.parse(s); }catch(e){ return fallback; }
 }
 
+/* ---------------- multi-monitor / second screen ----------------
+   A browser page can't literally span two physical displays, so "two
+   screens" here means: open a second top-level window running this same
+   page, and keep the two in sync over BroadcastChannel (same storage,
+   same installed apps, same theme -- but each screen keeps its own
+   independent set of open app windows and virtual desktops, exactly like
+   two real monitors each showing their own workspace). When the
+   experimental Window Management API is available and permitted, the new
+   window is placed directly on the other physical display; otherwise it
+   opens as a normal window the person can drag over themselves. */
+const MultiScreen = (function(){
+  const CHANNEL = 'guios-sync-v1';
+  let channel = null;
+  try{ channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null; }catch(e){ channel = null; }
+
+  let isSecondary = false;
+  try{ isSecondary = new URLSearchParams(location.search).get('screen') === '2'; }catch(e){}
+
+  function broadcast(type){
+    if(!channel) return;
+    try{ channel.postMessage({ type: type }); }catch(e){}
+  }
+  function onMessage(handler){
+    if(!channel) return;
+    channel.addEventListener('message', function(e){ if(e && e.data && e.data.type) handler(e.data.type); });
+  }
+
+  async function openSecondScreen(){
+    const url = location.origin + location.pathname + '?screen=2';
+    /* getScreenDetails() itself triggers a permission prompt the first time
+       it's called, which would stall this click handler waiting on the
+       person to answer it. So only ever call it when the permission was
+       already granted in an earlier visit; every other case (never asked,
+       denied, or the API missing entirely) falls straight through to a
+       plain window.open() the person can drag to the other monitor by hand. */
+    try{
+      if('getScreenDetails' in window && navigator.permissions && navigator.permissions.query){
+        const status = await navigator.permissions.query({ name: 'window-management' });
+        if(status.state === 'granted'){
+          const details = await window.getScreenDetails();
+          const other = details.screens.find(function(s){ return s !== details.currentScreen; });
+          if(other){
+            window.open(url, 'guios-secondary',
+              'left=' + other.availLeft + ',top=' + other.availTop + ',width=' + other.availWidth + ',height=' + other.availHeight);
+            return 'placed';
+          }
+        }
+      }
+    }catch(e){ /* API unsupported, or this browser doesn't recognize the permission name */ }
+    const w = window.open(url, 'guios-secondary');
+    return w ? 'opened' : 'blocked';
+  }
+
+  return { isSecondary: isSecondary, hasChannel: !!channel, openSecondScreen: openSecondScreen, broadcast: broadcast, onMessage: onMessage };
+})();
+</script>
+
+<script>
 /* ---------------- storage backend (tiered, never throws) ----------------
    1) window.storage  — Claude.ai artifact key/value store (persists across
       sessions when GUIOS is opened as a Claude artifact)
@@ -1211,6 +1269,7 @@ const Settings = (function(){
     Object.assign(current, patch || {});
     apply();
     await save();
+    MultiScreen.broadcast('settings-changed');
   }
   function resolvedTheme(){
     if(current.theme !== 'auto') return current.theme;
@@ -1274,7 +1333,7 @@ const AppRegistry = (function(){
     });
     await saveIndex();
   }
-  async function saveIndex(){ await StorageBackend.setJSON('os:apps:index', index); }
+  async function saveIndex(){ await StorageBackend.setJSON('os:apps:index', index); MultiScreen.broadcast('apps-changed'); }
 
   function getBuiltinCode(id){
     const cat = BUILTIN_CATALOG.find(function(x){ return x.id === id; });
@@ -3112,15 +3171,26 @@ $('topbar-lock-btn').addEventListener('click', function(){
 });
 
 /* ---------------- desktop empty-area context menu ---------------- */
+async function openSecondScreenFlow(){
+  const result = await MultiScreen.openSecondScreen();
+  if(result === 'placed') showToast({ title:'新しい画面を開きました', body:'2台目のディスプレイに配置しました', icon:'🖥️' });
+  else if(result === 'opened') showToast({ title:'新しい画面を開きました', body:'ウィンドウを2台目のモニターへドラッグしてください', icon:'🖥️' });
+  else showToast({ title:'開けませんでした', body:'ポップアップがブロックされている可能性があります', icon:'⚠️', type:'error' });
+}
 $('desktop').addEventListener('contextmenu', function(e){
   if(e.target.closest('.icon-tile')) return;
   e.preventDefault();
-  showContextMenu(e.clientX, e.clientY, [
+  const items = [
     { icon:'🖼️', label:'壁紙を変更', onSelect:function(){ launchApp('settings'); } },
     { icon:'🔍', label:'アプリを検索', onSelect:function(){ $('desktop-search').focus(); } },
     { sep:true },
     { icon:'⚙️', label:'設定を開く', onSelect:function(){ launchApp('settings'); } }
-  ]);
+  ];
+  if(!MultiScreen.isSecondary && document.documentElement.getAttribute('data-mode') === 'desktop'){
+    items.push({ sep:true });
+    items.push({ icon:'🖥️', label:'新しい画面を開く（マルチモニター）', onSelect:openSecondScreenFlow });
+  }
+  showContextMenu(e.clientX, e.clientY, items);
 });
 $('desktop-search').addEventListener('input', debounce(function(e){ renderDesktop(e.target.value); }, 120));
 
@@ -3201,7 +3271,22 @@ function finishBoot(){
   renderDesktopSwitcher();
   updateClocks();
   if(Settings.get().lockEnabled) showLockScreen();
+  if(MultiScreen.isSecondary) document.title = 'GUIOS — 第2画面';
 }
+/* Keep every open screen in sync: an app install/uninstall or a settings
+   change on one screen re-reads the shared storage and repaints here too,
+   without touching this screen's own open windows or virtual desktops. */
+MultiScreen.onMessage(function(type){
+  if(type === 'apps-changed'){
+    AppRegistry.loadIndex().then(function(){
+      renderDesktop($('desktop-search') ? $('desktop-search').value : '');
+      renderDock();
+      if(typeof refreshStoreListIfOpen === 'function') refreshStoreListIfOpen();
+    });
+  } else if(type === 'settings-changed'){
+    Settings.load();
+  }
+});
 $('boot-skip').addEventListener('click', async function(){
   $('boot-err').style.display = 'none';
   $('boot-skip').style.display = 'none';
