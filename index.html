@@ -4583,16 +4583,51 @@ SYS_RENDER.browser = async function(root, win){
       return;
     }
     current = u;
+    setHint('確認中…');
+    const c = Config.get();
+    if(c.browserProxyUrl){
+      /* A browser has no reliable way to tell "this cross-origin iframe
+         was blocked by X-Frame-Options" apart from "it genuinely loaded
+         a blank page" -- both are equally opaque to the parent page.
+         (An earlier version of this tried reading the frame's location
+         as a heuristic; in testing, a blocked navigation and a
+         successful one throw identically, so that never actually
+         worked.) The proxy, though, fetches the target itself and can
+         read the real response headers, so ask IT whether the site
+         would refuse to be framed, before ever showing a blank pane. */
+      checkFramable(u, c).then(function(blocked){
+        if(blocked){
+          showToast({ title:'埋め込みが許可されていません', body:'プロキシ経由で開いています', icon:'🌐' });
+          viaProxy(u);
+        } else {
+          directEmbed(u, true);
+        }
+      });
+    } else {
+      directEmbed(u, false);
+    }
+  }
+  async function checkFramable(u, c){
+    try{
+      const headers = {};
+      if(c.browserProxyKey) headers['X-OS-Auth-Key'] = c.browserProxyKey;
+      const res = await fetch(c.browserProxyUrl.replace(/\/$/, '') + '?check=1&url=' + encodeURIComponent(u), { headers: headers });
+      if(!res.ok) return false;
+      const data = await res.json();
+      return !!data.blocked;
+    }catch(e){ return false; }
+  }
+  function directEmbed(u, hasProxy){
     const view = qs('#brView', root);
     view.innerHTML = '<iframe class="br-frame" id="brFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>';
     qs('#brFrame', root).src = u;
     setHint(
       '表示されない場合、このサイトは埋め込みを許可していません。' +
       '<button class="btn ghost sm" id="brOpenTab" style="margin-left:8px;">新しいタブで開く</button>' +
-      (Config.get().browserProxyUrl ? '<button class="btn ghost sm" id="brProxy" style="margin-left:6px;">プロキシ経由で開く</button>' : '')
+      (hasProxy ? '<button class="btn ghost sm" id="brProxy" style="margin-left:6px;">プロキシ経由で開く</button>' : '')
     );
     const t1 = qs('#brOpenTab', root); if(t1) t1.addEventListener('click', function(){ window.open(current, '_blank', 'noopener'); });
-    const t2 = qs('#brProxy', root); if(t2) t2.addEventListener('click', function(){ viaProxy(current); });
+    if(hasProxy){ const t2 = qs('#brProxy', root); if(t2) t2.addEventListener('click', function(){ viaProxy(current); }); }
   }
   async function viaProxy(u){
     const c = Config.get();
