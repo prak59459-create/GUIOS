@@ -241,6 +241,16 @@ html[data-mode="mobile"] #tb-tasks{ display:none; }
 #lch-close{ position:absolute; top:calc(16px + var(--safe-t)); right:max(16px,var(--safe-r)); width:32px; height:32px; border-radius:50%; border:1px solid var(--line-hot); background:var(--void-2); color:var(--ink-1); cursor:pointer; touch-action:manipulation; }
 @media (max-width:420px){ #lch-grid{ grid-template-columns:repeat(auto-fill,80px); gap:16px 4px; } #lch-grid .glyph{ width:54px; height:54px; font-size:25px; } }
 
+/* ---------- browser app ---------- */
+.br-shell{ display:flex; flex-direction:column; width:100%; height:100%; }
+.br-bar{ display:flex; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); flex-shrink:0; }
+.br-bar .input{ flex:1; min-width:0; }
+.br-view{ flex:1; min-height:0; background:var(--void-0); position:relative; }
+.br-frame{ width:100%; height:100%; border:0; display:block; background:#fff; }
+.br-empty{ padding:40px 20px; text-align:center; color:var(--ink-2); font-size:12px; line-height:1.8; }
+.br-hint{ padding:8px 12px; font-size:11px; color:var(--ink-2); border-top:1px solid var(--line); flex-shrink:0; min-height:16px; }
+.br-hint .btn{ font-size:11px; padding:5px 10px; }
+
 /* ---------- login screen ---------- */
 #login{
   position:fixed; inset:0; z-index:99000; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1229,7 +1239,16 @@ const DEFAULT_CONFIG = {
   confirmDelete: true,
   showHiddenFiles: false,
   terminalGreeting: true,
-  widgetLayoutMode: 'panel'
+  widgetLayoutMode: 'panel',
+  /* Optional, user-supplied proxy for the Browser app to fall back to
+     when a site refuses to be framed directly. Empty by default -- the
+     Browser app works with no configuration at all for any site that
+     doesn't set X-Frame-Options/CSP frame-ancestors, which is most of
+     the web. This is deliberately just a plain config value, not a
+     hardcoded endpoint, so nothing here depends on any specific
+     deployment. See the "ブラウザ" section under 設定 > ネットワーク. */
+  browserProxyUrl: '',
+  browserProxyKey: ''
 };
 /* theme.json holds hand-edited token OVERRIDES on top of whichever
    base theme (Void/Lumen) is active in Settings -- empty by default,
@@ -1555,7 +1574,8 @@ const SYSTEM_APPS = [
   { id:'editor',   name:'エディタ',   icon:'✎',  color:'#ffb547', system:true, desc:'テキスト / 設定ファイルの編集' },
   { id:'store',    name:'ストア',     icon:'◈',  color:'#f0468c', system:true, desc:'アプリの追加とアップデート' },
   { id:'settings', name:'設定',       icon:'⚙',  color:'#a8b3d4', system:true, desc:'OS の設定と権限管理' },
-  { id:'taskmgr',  name:'タスクマネージャー', icon:'◉', color:'#8b5cf6', system:true, desc:'プロセス・パフォーマンス・スタートアップの管理' }
+  { id:'taskmgr',  name:'タスクマネージャー', icon:'◉', color:'#8b5cf6', system:true, desc:'プロセス・パフォーマンス・スタートアップの管理' },
+  { id:'browser',  name:'ブラウザ',   icon:'🌐', color:'#4f8ef7', system:true, desc:'Webサイトを閲覧（埋め込みを許可しているサイトを直接表示）' }
 ];
 const MAX_APP_BYTES = 5 * 1024 * 1024;
 /* Per-app storage quota is a firmware setting, read live rather than
@@ -4501,6 +4521,99 @@ const APP_TEMPLATE = '<' + '!--N5-APP {"id":"my-app","name":"マイアプリ","i
 '  }\n  main();\n' +
 '<' + '/script' + '>\n</body>\n</html>\n';
 
+/* ---------------- Browser ----------------
+   A real iframe pointed at the live web -- unlike an app window, there
+   is no N5 SDK bridge and no VFS access here, just an ordinary
+   cross-origin <iframe>. Most sites embed directly with zero
+   configuration; a site that sets X-Frame-Options/CSP frame-ancestors
+   simply refuses to render (silently -- there's no catchable JS error
+   for that), at which point the fallback buttons below are there
+   instead of trying to defeat that site's own security choice by
+   default. */
+SYS_RENDER.browser = async function(root, win){
+  let current = '';
+  function normalizeUrl(v){
+    v = String(v || '').trim();
+    if(!v) return '';
+    if(!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v;
+  }
+  function draw(){
+    root.innerHTML =
+      '<div class="br-shell">' +
+        '<div class="br-bar">' +
+          '<input class="input mono" id="brUrl" type="text" placeholder="https://example.com" autocomplete="off" spellcheck="false">' +
+          '<button class="btn sm" id="brGo">移動</button>' +
+          '<button class="btn ghost sm" id="brNewTab" title="新しいタブで開く">↗</button>' +
+        '</div>' +
+        '<div class="br-view" id="brView"><div class="br-empty">URLを入力して「移動」を押してください。<br>埋め込み表示を許可しているサイトはそのまま表示されます。</div></div>' +
+        '<div class="br-hint" id="brHint"></div>' +
+      '</div>';
+    qs('#brUrl', root).value = current;
+    qs('#brGo', root).addEventListener('click', go);
+    qs('#brUrl', root).addEventListener('keydown', function(e){ if(e.key === 'Enter') go(); });
+    qs('#brNewTab', root).addEventListener('click', function(){
+      const u = normalizeUrl(qs('#brUrl', root).value);
+      if(u) window.open(u, '_blank', 'noopener');
+    });
+  }
+  function setHint(html){ const h = qs('#brHint', root); if(h) h.innerHTML = html; }
+  function go(){
+    const u = normalizeUrl(qs('#brUrl', root).value);
+    if(!u) return;
+    /* Same-origin pages (anything else hosted under this exact origin,
+       e.g. a sibling GitHub Pages project on the same *.github.io
+       subdomain) must never get allow-same-origin here: that would
+       hand them this OS's own localStorage -- its entire filesystem --
+       not just their own. */
+    let sameOrigin = false;
+    try{ sameOrigin = new URL(u).origin === location.origin; }catch(e){}
+    if(sameOrigin){
+      setHint('このOS自身と同じオリジンのページは、セキュリティ上の理由でここには埋め込めません。<button class="btn ghost sm" id="brOpenTab3" style="margin-left:8px;">新しいタブで開く</button>');
+      const t = qs('#brOpenTab3', root); if(t) t.addEventListener('click', function(){ window.open(u, '_blank', 'noopener'); });
+      qs('#brView', root).innerHTML = '<div class="br-empty">埋め込みを拒否しました。</div>';
+      return;
+    }
+    current = u;
+    const view = qs('#brView', root);
+    view.innerHTML = '<iframe class="br-frame" id="brFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>';
+    qs('#brFrame', root).src = u;
+    setHint(
+      '表示されない場合、このサイトは埋め込みを許可していません。' +
+      '<button class="btn ghost sm" id="brOpenTab" style="margin-left:8px;">新しいタブで開く</button>' +
+      (Config.get().browserProxyUrl ? '<button class="btn ghost sm" id="brProxy" style="margin-left:6px;">プロキシ経由で開く</button>' : '')
+    );
+    const t1 = qs('#brOpenTab', root); if(t1) t1.addEventListener('click', function(){ window.open(current, '_blank', 'noopener'); });
+    const t2 = qs('#brProxy', root); if(t2) t2.addEventListener('click', function(){ viaProxy(current); });
+  }
+  async function viaProxy(u){
+    const c = Config.get();
+    if(!c.browserProxyUrl){ showToast({ title:'プロキシが設定されていません', body:'設定 > ネットワーク で設定してください', type:'warn' }); return; }
+    setHint('読み込み中…');
+    try{
+      const headers = {};
+      if(c.browserProxyKey) headers['X-OS-Auth-Key'] = c.browserProxyKey;
+      const res = await fetch(c.browserProxyUrl.replace(/\/$/, '') + '?url=' + encodeURIComponent(u), { headers: headers });
+      if(!res.ok){
+        const body = await res.text().catch(function(){ return ''; });
+        throw new Error('HTTP ' + res.status + (body ? (': ' + body.slice(0, 140)) : ''));
+      }
+      const html = await res.text();
+      const view = qs('#brView', root);
+      /* No allow-same-origin here: srcdoc content without it always gets
+         a unique opaque origin, matching the sandboxing already used for
+         this OS's own third-party apps. */
+      view.innerHTML = '<iframe class="br-frame" id="brFrame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>';
+      qs('#brFrame', root).srcdoc = html;
+      setHint('プロキシ経由で表示しています。<button class="btn ghost sm" id="brOpenTab2" style="margin-left:8px;">新しいタブで開く</button>');
+      const t = qs('#brOpenTab2', root); if(t) t.addEventListener('click', function(){ window.open(u, '_blank', 'noopener'); });
+    }catch(err){
+      setHint('プロキシ経由の取得に失敗しました: ' + escapeHtml(String((err && err.message) || err)));
+    }
+  }
+  draw();
+};
+
 /* ---------------- Settings ---------------- */
 SYS_RENDER.settings = async function(root, win){
   const NAV = [
@@ -4642,6 +4755,13 @@ SYS_RENDER.settings = async function(root, win){
       '<div class="card">' +
         '<div class="row"><span>ホスト名</span><b class="mono" style="font-size:11px;">' + escapeHtml(NVRAM.get().system.hostname || 'nebula') + '</b></div>' +
         '<div class="row"><span>変更するには</span><button class="btn ghost sm" id="btNetUefi">UEFI Setup を開く</button></div>' +
+      '</div>' +
+      '<div class="sect">ブラウザの埋め込みプロキシ（任意）</div>' +
+      '<div class="card">' +
+        '<div class="hint" style="margin-bottom:10px;">ブラウザアプリで、埋め込み表示を拒否するサイトを開くための代替経路です。空欄のままなら直接埋め込みのみ使われます。自分で管理するプロキシのURLだけを設定してください — ここに入れた値はこのブラウザのローカル設定として保存されるだけで、URLにもヘッダーにも本当の意味の秘匿性はありません。</div>' +
+        '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px;"><span>プロキシURL</span><input class="input mono" id="inProxyUrl" type="text" placeholder="https://your-worker.your-subdomain.workers.dev" style="font-size:11px;"></div>' +
+        '<div class="row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;"><span>認証ヘッダーの値（任意）</span><input class="input mono" id="inProxyKey" type="text" placeholder="X-OS-Auth-Key の値" style="font-size:11px;"></div>' +
+        '<div class="row" style="margin-top:12px;"><span>保存</span><button class="btn ghost sm" id="btSaveProxy">保存</button></div>' +
       '</div>';
   }
 
@@ -4717,6 +4837,17 @@ SYS_RENDER.settings = async function(root, win){
       renderBody();
     });
     const btNetUefi = qs('#btNetUefi', root2); if(btNetUefi) btNetUefi.addEventListener('click', openSetupFromOS);
+    const inProxyUrl = qs('#inProxyUrl', root2);
+    if(inProxyUrl){
+      inProxyUrl.value = c.browserProxyUrl || '';
+      qs('#inProxyKey', root2).value = c.browserProxyKey || '';
+      qs('#btSaveProxy', root2).addEventListener('click', function(){
+        Config.update({
+          browserProxyUrl: qs('#inProxyUrl', root2).value.trim(),
+          browserProxyKey: qs('#inProxyKey', root2).value.trim()
+        }).then(function(){ showToast({ title:'保存しました', icon:'📶', type:'success' }); });
+      });
+    }
     const btNewScreen = qs('#btNewScreen', root2); if(btNewScreen) btNewScreen.addEventListener('click', openSecondScreenFlow);
     const btScreenPerm = qs('#btScreenPerm', root2);
     if(btScreenPerm) btScreenPerm.addEventListener('click', async function(){
