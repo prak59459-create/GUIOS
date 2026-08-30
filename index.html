@@ -509,6 +509,7 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
   <div id="desk-layer">
     <div id="wallpaper"></div>
     <div id="desk"></div>
+    <div id="widget-layer"></div>
     <div id="win-layer"><div id="snap-ghost"></div></div>
   </div>
 
@@ -522,6 +523,7 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
     <div id="tb-tasks"></div>
     <div id="desktop-switcher"></div>
     <div id="tb-right">
+      <button class="tb-btn hidden" id="tb-widgets" title="ウィジェット">▦</button>
       <button class="tb-btn" id="tb-files" title="ファイル">🗂</button>
       <button class="tb-btn" id="tb-term" title="ターミナル">▶_</button>
       <button class="tb-btn" id="tb-settings" title="設定">⚙</button>
@@ -534,6 +536,17 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
     <div id="lch-grab"></div>
     <input class="input" id="lch-search" type="text" placeholder="アプリを検索…" autocomplete="off">
     <div id="lch-grid"></div>
+  </div>
+
+  <div id="widget-panel" class="hidden">
+    <div id="widget-panel-head">
+      <span>ウィジェット</span>
+      <div id="widget-panel-acts">
+        <button id="wpAddBtn" title="ウィジェットを追加">＋</button>
+        <button id="wpCloseBtn" title="閉じる">✕</button>
+      </div>
+    </div>
+    <div id="widget-panel-body"></div>
   </div>
 </div>
 
@@ -1123,7 +1136,8 @@ const DEFAULT_CONFIG = {
   doubleClickToOpen: false,
   confirmDelete: true,
   showHiddenFiles: false,
-  terminalGreeting: true
+  terminalGreeting: true,
+  widgetLayoutMode: 'panel'
 };
 const DEFAULT_THEME = {
   name: 'Void',
@@ -1375,6 +1389,7 @@ const Permissions = (function(){
   return { load, ensure, state, set, listFor, all, clearApp };
 })();
 
+const WIDGET_SIZES = ['small', 'medium', 'large'];
 /* ---------------- app registry (backed by /System/registry.json + /Applications) ----------------
    The registry file is an index, not the source of truth for code:
    an app's HTML lives at /Applications/<id>.app/main.html where the
@@ -1449,6 +1464,11 @@ const Registry = (function(){
     over = over || {};
     const p = parseManifest(html) || {};
     const now = Date.now();
+    let widget = (prev && prev.widget) || null;
+    if(p.widget && typeof p.widget === 'object'){
+      const sizes = Array.isArray(p.widget.sizes) ? p.widget.sizes.filter(function(s){ return WIDGET_SIZES.indexOf(s) !== -1; }) : [];
+      widget = { sizes: sizes.length ? sizes.slice(0, 3) : ['small', 'medium'] };
+    }
     return {
       id: id,
       name: String(over.name || p.name || (prev && prev.name) || id).slice(0, 40),
@@ -1459,7 +1479,12 @@ const Registry = (function(){
       desc: String(over.desc || over.description || p.description || (prev && prev.desc) || '').slice(0, 140),
       installedAt: prev ? prev.installedAt : now,
       updatedAt: prev ? now : undefined,
-      size: bytesOf(html)
+      size: bytesOf(html),
+      /* Any app can opt into being usable as a widget by declaring a
+         "widget" block in its manifest -- the OS then renders its own
+         main.html a second time, smaller and without window chrome,
+         inside the widget layer/panel. No separate widget file format. */
+      widget: widget
     };
   }
 
@@ -2042,9 +2067,13 @@ function platformInfo(){
   try{ coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches; }catch(e){}
   return { mode: Config.resolveMode(), theme: Config.get().theme, isTouch: coarse, os: OS_NAME, version: OS_VERSION, safeMode: Boot.isSafe() };
 }
-function buildBootstrap(meta){
+function buildBootstrap(meta, opts){
   const info = { id: meta.id, name: meta.name, version: meta.version || '1.0.0' };
-  const plat = platformInfo();
+  /* An app declared widget-capable in its manifest is booted from this
+     same function a second time, smaller and chromeless -- it tells
+     itself apart purely via PLATFORM.surface / widgetSize, so a single
+     main.html can freely serve as both the full app and its widget. */
+  const plat = Object.assign(platformInfo(), { surface: (opts && opts.surface) || 'window', widgetSize: (opts && opts.size) || null });
   return '<script>\n(function(){\n' +
 '  var APP = ' + JSON.stringify(info) + ';\n' +
 '  var PLATFORM = ' + JSON.stringify(plat) + ';\n' +
@@ -2157,8 +2186,13 @@ window.addEventListener('message', async function(e){
   if(d.__pong__ === true){ const pw = WM.byFrame(e.source); if(pw) WM.notePong(pw.id); return; }
   if(typeof d.reqId === 'undefined') return;
   const win = WM.byFrame(e.source);
-  if(!win) return;
-  const appId = win.appId;
+  /* A widget-mode iframe isn't a WM window, but it runs the same app
+     code and deserves the same fs/kv/notify/openApp access, scoped to
+     the same appId -- only the window-chrome actions below are no-ops
+     for it. */
+  const widgetAppId = win ? null : Widgets.ownerOf(e.source);
+  if(!win && !widgetAppId) return;
+  const appId = win ? win.appId : widgetAppId;
   if(rateLimited(appId)) return;
   function reply(result, error){
     try{ e.source.postMessage({ n5:true, reqId:d.reqId, result:result, error:error }, '*'); }catch(err){}
@@ -2217,10 +2251,10 @@ window.addEventListener('message', async function(e){
       showToast({ title:(m.name || appId), body:String(pl.message || ''), icon:(m.icon || '🔔'), type:(pl.opts && pl.opts.type) || 'info' });
       reply(true);
     } else if(a === 'setTitle'){
-      WM.setTitle(win.id, String(pl.title || win.title));
+      if(win) WM.setTitle(win.id, String(pl.title || win.title));
       reply(true);
-    } else if(a === 'close'){ WM.close(win.id); reply(true); }
-    else if(a === 'minimize'){ WM.toggleMin(win.id); reply(true); }
+    } else if(a === 'close'){ if(win) WM.close(win.id); reply(true); }
+    else if(a === 'minimize'){ if(win) WM.toggleMin(win.id); reply(true); }
     else if(a === 'openApp'){
       if(!(await Permissions.ensure(appId, 'openApp'))){ reply(null, 'permission denied: openApp'); return; }
       await launchApp(String(pl.id || '')); reply(true);
@@ -3829,6 +3863,446 @@ $('fi-install').addEventListener('change', function(e){
   if(f) handleInstallFile(f);
 });
 </script>
+<style>
+/* ---------------- widgets ---------------- */
+#widget-layer{ position:absolute; inset:0; pointer-events:none; }
+#widget-layer .widget-inst{ position:absolute; pointer-events:auto; }
+.widget-inst{
+  background:color-mix(in srgb, var(--void-1) 88%, transparent);
+  border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-2);
+  backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.widget-inst.size-small{ width:150px; height:130px; }
+.widget-inst.size-medium{ width:230px; height:190px; }
+.widget-inst.size-large{ width:340px; height:270px; }
+#widget-panel .widget-inst{ position:relative; width:100% !important; margin-bottom:12px; }
+#widget-panel .widget-inst.size-small{ height:110px; }
+#widget-panel .widget-inst.size-medium{ height:170px; }
+#widget-panel .widget-inst.size-large{ height:250px; }
+.widget-head{ display:flex; align-items:center; gap:7px; padding:9px 10px; border-bottom:1px solid var(--line); cursor:grab; touch-action:none; flex-shrink:0; }
+#widget-panel .widget-head{ cursor:default; }
+.widget-ico{ font-size:14px; flex-shrink:0; }
+.widget-name{ font-size:11.5px; font-weight:600; color:var(--ink-0); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.widget-acts{ display:flex; gap:2px; flex-shrink:0; }
+.widget-act{ background:none; border:none; color:var(--ink-2); font-size:11px; width:20px; height:20px; border-radius:6px; cursor:pointer; }
+.widget-act:hover{ background:var(--void-2); color:var(--ink-0); }
+.widget-body{ flex:1; overflow:hidden; position:relative; padding:10px; }
+.widget-frame{ width:100%; height:100%; border:0; background:transparent; }
+.widget-empty{ font-size:11px; color:var(--ink-2); text-align:center; padding:16px 6px; }
+
+#widget-panel{
+  position:fixed; top:0; right:0; bottom:var(--taskbar-h); width:min(320px,88vw); z-index:8700;
+  background:color-mix(in srgb, var(--void-1) 92%, transparent);
+  backdrop-filter:blur(30px) saturate(1.5); -webkit-backdrop-filter:blur(30px) saturate(1.5);
+  border-left:1px solid var(--line-hot); box-shadow:var(--sh-3);
+  transform:translateX(100%); transition:transform var(--t-med) var(--ease);
+  display:flex; flex-direction:column; padding-top:var(--safe-t);
+}
+#widget-panel.open{ transform:translateX(0); }
+#widget-panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; font-size:14px; font-weight:700; color:var(--ink-0); border-bottom:1px solid var(--line); flex-shrink:0; }
+#widget-panel-acts{ display:flex; gap:6px; }
+#widget-panel-acts button{ width:28px; height:28px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--void-2); color:var(--ink-1); cursor:pointer; font-size:14px; }
+#widget-panel-acts button:hover{ color:var(--ink-0); background:var(--void-3); }
+#widget-panel-body{ flex:1; overflow-y:auto; padding:14px; }
+.widget-empty-panel{ text-align:center; color:var(--ink-2); font-size:12px; padding:40px 12px; line-height:2; }
+
+.widget-gallery{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; margin:6px 0 4px; max-height:52vh; overflow-y:auto; }
+.widget-gcard{ background:var(--void-2); border:1px solid var(--line); border-radius:var(--r-md); padding:12px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; text-align:center; transition:background var(--t-fast), border-color var(--t-fast); }
+.widget-gcard:hover{ background:var(--void-3); border-color:var(--line-hot); }
+.widget-gicon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.widget-gname{ font-size:11px; font-weight:600; color:var(--ink-0); }
+.widget-gsizes{ font-size:9.5px; color:var(--ink-2); }
+
+/* built-in widget content */
+.w-clock-time{ font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--ink-0); letter-spacing:.02em; }
+.w-clock-date{ font-size:10.5px; color:var(--ink-2); margin-top:4px; }
+.w-cal-head{ font-size:11px; font-weight:700; color:var(--ink-0); margin-bottom:6px; }
+.w-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; font-size:9.5px; text-align:center; color:var(--ink-1); }
+.w-cal-dow{ color:var(--ink-2); font-weight:700; }
+.w-cal-today{ background:var(--signal); color:#05060b; border-radius:50%; font-weight:700; }
+.w-sysmon-pct{ font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--signal); }
+.w-sysmon-pct small{ font-size:13px; }
+.w-sysmon-label{ font-size:10px; color:var(--ink-2); margin:2px 0 6px; }
+.w-sysmon-graph{ display:flex; align-items:flex-end; gap:1px; height:44px; }
+.w-sysmon-graph i{ flex:1; background:var(--signal); opacity:.7; border-radius:1px 1px 0 0; min-height:2px; }
+.w-storage-pct{ font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--ink-0); }
+.w-storage-bar{ height:6px; border-radius:var(--r-full); background:var(--void-4); overflow:hidden; margin:8px 0 6px; }
+.w-storage-bar i{ display:block; height:100%; background:var(--signal); }
+.w-storage-sub{ font-size:9.5px; color:var(--ink-2); font-family:var(--font-mono); }
+.w-note-area{ width:100%; height:100%; resize:none; border:none; background:none; color:var(--ink-0); font-size:11.5px; line-height:1.6; outline:none; font-family:inherit; }
+.w-shortcuts-grid{ display:grid; grid-template-columns:repeat(auto-fill,54px); gap:8px; justify-content:center; }
+.w-shortcut-btn{ display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; cursor:pointer; padding:2px; }
+.w-shortcut-btn .glyph{ width:36px; height:36px; font-size:17px; border-radius:11px; }
+.w-shortcut-btn span{ font-size:9px; color:var(--ink-1); max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.w-uptime-val{ font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--ink-0); }
+.w-uptime-label{ font-size:9.5px; color:var(--ink-2); margin-top:4px; }
+.w-weather-icon{ font-size:30px; line-height:1; }
+.w-weather-temp{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--ink-0); margin-top:4px; }
+.w-weather-label{ font-size:10.5px; color:var(--ink-1); margin-top:2px; }
+.w-weather-note{ font-size:8.5px; color:var(--ink-2); margin-top:6px; }
+</style>
+<script>
+'use strict';
+/* ---------------- widgets ----------------
+   A widget is either one of the 8 built-in mini-views below, rendered
+   straight into the DOM like a system app, or any installed app that
+   declares a "widget" block in its manifest -- that app's own
+   main.html is booted a second time (same sandboxed iframe, same N5
+   SDK) at a smaller size with PLATFORM.surface === "widget", so a
+   third-party developer can make their app widget-capable without any
+   new file format or separate SDK. Placement is either "panel" (a
+   dedicated slide-in drawer) or "freeform" (positioned directly on
+   the desktop), chosen in Settings and shared across screens the same
+   way installed apps are. */
+const BUILTIN_WIDGETS = [
+  { id:'sys.clock',     name:'時計',             icon:'🕐', color:'#22d3ee', sizes:['small','medium'] },
+  { id:'sys.calendar',  name:'カレンダー',        icon:'🗓', color:'#f0468c', sizes:['medium','large'] },
+  { id:'sys.sysmon',    name:'システムモニター',  icon:'📈', color:'#3ddc97', sizes:['small','medium','large'] },
+  { id:'sys.storage',   name:'ストレージ',        icon:'🗄', color:'#ffb547', sizes:['small','medium'] },
+  { id:'sys.quicknote', name:'クイックメモ',      icon:'📝', color:'#8b5cf6', sizes:['medium','large'] },
+  { id:'sys.shortcuts', name:'ショートカット',    icon:'🚀', color:'#22d3ee', sizes:['medium','large'] },
+  { id:'sys.uptime',    name:'稼働時間',          icon:'⏱', color:'#a8b3d4', sizes:['small'] },
+  { id:'sys.weather',   name:'天気（シミュレーション）', icon:'⛅', color:'#3fa0c9', sizes:['small','medium'] }
+];
+const WIDGET_RENDER = {};
+WIDGET_RENDER['sys.clock'] = function(el, size){
+  function draw(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0'), ss = String(now.getSeconds()).padStart(2, '0');
+    el.innerHTML = '<div class="w-clock-time">' + hh + ':' + mm + (size === 'small' ? '' : ':' + ss) + '</div>' +
+      '<div class="w-clock-date">' + escapeHtml(now.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' })) + '</div>';
+  }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.calendar'] = function(el){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  let html = '<div class="w-cal-head">' + (m + 1) + '月 ' + y + '</div><div class="w-cal-grid">';
+  ['日', '月', '火', '水', '木', '金', '土'].forEach(function(d){ html += '<span class="w-cal-dow">' + d + '</span>'; });
+  for(let i = 0; i < first; i++) html += '<span></span>';
+  for(let d = 1; d <= days; d++) html += '<span class="' + (d === today ? 'w-cal-today' : '') + '">' + d + '</span>';
+  html += '</div>';
+  el.innerHTML = html;
+  return null;
+};
+WIDGET_RENDER['sys.sysmon'] = function(el, size){
+  function draw(){
+    const pct = TaskMgr.loadPct();
+    el.innerHTML = '<div class="w-sysmon-pct">' + pct + '<small>%</small></div><div class="w-sysmon-label">応答性負荷</div>' +
+      (size === 'small' ? '' : TaskMgr.graph(TaskMgr.lagHist, 200, 'w-sysmon-graph'));
+  }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.storage'] = function(el){
+  function draw(){
+    const used = VFS.totalBytes();
+    const cap = NVRAM.get().memory.sizeMB * 1024 * 1024;
+    const pct = clamp(Math.round(used / cap * 100), 0, 100);
+    el.innerHTML = '<div class="w-storage-pct">' + pct + '%</div><div class="w-storage-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="w-storage-sub">' + fmtBytes(used) + ' / ' + fmtBytes(cap) + '</div>';
+  }
+  draw();
+  const t = setInterval(draw, 4000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.quicknote'] = function(el){
+  const dir = '/Users/default/AppData/_widgets', path = dir + '/quicknote.txt';
+  el.innerHTML = '<textarea class="w-note-area" placeholder="メモ…"></textarea>';
+  const ta = el.querySelector('.w-note-area');
+  try{ ta.value = VFS.exists(path) ? VFS.read(path) : ''; }catch(e){}
+  let timer = null;
+  ta.addEventListener('input', function(){
+    clearTimeout(timer);
+    timer = setTimeout(async function(){
+      try{ if(!VFS.exists(dir)) await VFS.mkdir(dir, true); }catch(e){}
+      try{ await VFS.write(path, ta.value); }catch(e){}
+    }, 500);
+  });
+  return function(){ clearTimeout(timer); };
+};
+WIDGET_RENDER['sys.shortcuts'] = function(el, size){
+  const n = size === 'large' ? 8 : 6;
+  const apps = Registry.listAll().slice(0, n);
+  if(!apps.length){ el.innerHTML = '<div class="widget-empty">アプリがありません</div>'; return null; }
+  el.innerHTML = '<div class="w-shortcuts-grid"></div>';
+  const g = el.querySelector('.w-shortcuts-grid');
+  apps.forEach(function(a){
+    const b = document.createElement('button');
+    b.className = 'w-shortcut-btn';
+    b.title = a.name;
+    b.innerHTML = glyphHTML(a) + '<span></span>';
+    b.querySelector('span').textContent = a.name;
+    b.addEventListener('click', function(){ launchApp(a.id); });
+    g.appendChild(b);
+  });
+  return null;
+};
+const WIDGET_BOOT_AT = Date.now();
+WIDGET_RENDER['sys.uptime'] = function(el){
+  function fmt(ms){
+    let s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600); s -= h * 3600;
+    const m = Math.floor(s / 60); s -= m * 60;
+    return (h ? h + '時間' : '') + m + '分' + s + '秒';
+  }
+  function draw(){ el.innerHTML = '<div class="w-uptime-val">' + fmt(Date.now() - WIDGET_BOOT_AT) + '</div><div class="w-uptime-label">このセッションの稼働時間</div>'; }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.weather'] = function(el){
+  /* No network access, so this is honestly labeled simulated data rather
+     than pretending to be a live feed -- same principle as TaskMgr's
+     measured-not-invented numbers, just the other direction: an app
+     that truly can't measure the weather says so instead of faking it. */
+  const conditions = [
+    { icon:'☀️', label:'晴れ' }, { icon:'☁️', label:'くもり' }, { icon:'🌧', label:'小雨' },
+    { icon:'⛅', label:'晴れときどきくもり' }, { icon:'🌤', label:'くもりのち晴れ' }
+  ];
+  const seed = new Date().toISOString().slice(0, 10).split('-').reduce(function(a, c){ return a + parseInt(c, 10); }, 0);
+  const c = conditions[seed % conditions.length];
+  const temp = 14 + (seed % 15);
+  el.innerHTML = '<div class="w-weather-icon">' + c.icon + '</div><div class="w-weather-temp">' + temp + '℃</div>' +
+    '<div class="w-weather-label">' + escapeHtml(c.label) + '</div><div class="w-weather-note">※ シミュレーション（オフライン）</div>';
+  return null;
+};
+
+const Widgets = (function(){
+  const KEY = '/System/widgets.json';
+  let list = [];
+  const frameOwners = new Map();
+
+  function builtinDef(id){ return BUILTIN_WIDGETS.find(function(b){ return b.id === id; }) || null; }
+  function appDef(appId){
+    const m = Registry.get(appId);
+    if(!m || !m.widget) return null;
+    return { id:'app:' + appId, appId:appId, name:m.name, icon:m.icon, color:m.color, sizes:m.widget.sizes.length ? m.widget.sizes : ['small', 'medium'] };
+  }
+  function defOf(ref){ return String(ref || '').indexOf('app:') === 0 ? appDef(ref.slice(4)) : builtinDef(ref); }
+  function catalog(){
+    const appWidgets = Registry.listAll().map(function(a){ return a.widget ? appDef(a.id) : null; }).filter(Boolean);
+    return BUILTIN_WIDGETS.concat(appWidgets);
+  }
+
+  async function load(){
+    const raw = VFS.exists(KEY) ? VFS.readJSON(KEY, []) : [];
+    list = (Array.isArray(raw) ? raw : []).filter(function(i){ return i && i.instId && i.ref && defOf(i.ref); });
+  }
+  async function save(){ await VFS.writeJSON(KEY, list); MultiScreen.broadcast('widgets-changed'); }
+  function all(){ return list.slice(); }
+  function get(instId){ return list.find(function(i){ return i.instId === instId; }) || null; }
+  async function add(ref, size){
+    const def = defOf(ref);
+    if(!def) return null;
+    const n = list.length;
+    const inst = {
+      instId: 'w-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      ref: ref, size: (def.sizes.indexOf(size) !== -1 ? size : def.sizes[0]),
+      x: 24 + (n % 6) * 26, y: 24 + (n % 6) * 22, order: n
+    };
+    list.push(inst);
+    await save();
+    return inst;
+  }
+  async function remove(instId){
+    const i = list.findIndex(function(x){ return x.instId === instId; });
+    if(i === -1) return false;
+    list.splice(i, 1);
+    await save();
+    return true;
+  }
+  async function setPos(instId, x, y){ const inst = get(instId); if(!inst) return; inst.x = x; inst.y = y; await save(); }
+  async function setSize(instId, size){ const inst = get(instId); if(!inst) return; inst.size = size; await save(); }
+
+  function registerFrame(win, appId){ frameOwners.set(win, appId); }
+  function unregisterFrame(win){ frameOwners.delete(win); }
+  function ownerOf(win){ return frameOwners.get(win) || null; }
+
+  return {
+    load, save, all, get, add, remove, setPos, setSize,
+    catalog, defOf, builtinDef, appDef, registerFrame, unregisterFrame, ownerOf
+  };
+})();
+
+const _widgetMounted = new Map();
+let _widgetDrag = null;
+function mountWidgetInstance(container, inst, freeform){
+  const def = Widgets.defOf(inst.ref);
+  const el = document.createElement('div');
+  el.className = 'widget-inst size-' + (def ? inst.size : 'small');
+  el.dataset.inst = inst.instId;
+  if(freeform){ el.style.left = (inst.x || 24) + 'px'; el.style.top = (inst.y || 24) + 'px'; }
+  if(!def){ el.innerHTML = '<div class="widget-empty">見つかりません</div>'; container.appendChild(el); return el; }
+  el.innerHTML =
+    '<div class="widget-head"><span class="widget-ico"></span><span class="widget-name"></span>' +
+      '<div class="widget-acts">' +
+        (def.sizes.length > 1 ? '<button class="widget-act" data-act="size" title="サイズ変更">⤢</button>' : '') +
+        '<button class="widget-act" data-act="remove" title="削除">✕</button>' +
+      '</div></div>' +
+    '<div class="widget-body"></div>';
+  el.querySelector('.widget-ico').textContent = def.icon || '▣';
+  el.querySelector('.widget-name').textContent = def.name;
+  container.appendChild(el);
+  const destroy = renderWidgetContent(el.querySelector('.widget-body'), inst, def);
+  if(destroy) _widgetMounted.set(inst.instId, destroy);
+  const rm = el.querySelector('[data-act="remove"]');
+  if(rm) rm.addEventListener('click', function(e){
+    e.stopPropagation();
+    confirmDialog({ title:'ウィジェットを削除', body:escapeHtml(def.name) + ' をこの画面から削除します。', okLabel:'削除', danger:true }).then(function(ok){
+      if(ok) Widgets.remove(inst.instId).then(refreshWidgetSurface);
+    });
+  });
+  const sz = el.querySelector('[data-act="size"]');
+  if(sz) sz.addEventListener('click', function(e){
+    e.stopPropagation();
+    const i = def.sizes.indexOf(inst.size);
+    Widgets.setSize(inst.instId, def.sizes[(i + 1) % def.sizes.length]).then(refreshWidgetSurface);
+  });
+  if(freeform) bindWidgetDrag(el, inst);
+  return el;
+}
+function renderWidgetContent(body, inst, def){
+  if(def.appId){
+    const meta = Registry.get(def.appId);
+    if(!meta || !VFS.exists(Registry.mainPath(def.appId))){ body.innerHTML = '<div class="widget-empty">利用できません</div>'; return null; }
+    const frame = document.createElement('iframe');
+    frame.className = 'widget-frame';
+    frame.setAttribute('sandbox', NVRAM.get().sandbox.strict ? 'allow-scripts' : 'allow-scripts allow-forms');
+    frame.srcdoc = buildBootstrap(meta, { surface:'widget', size:inst.size }) + (Registry.code(def.appId) || '');
+    body.appendChild(frame);
+    frame.addEventListener('load', function(){ try{ Widgets.registerFrame(frame.contentWindow, def.appId); }catch(e){} });
+    return function(){ try{ Widgets.unregisterFrame(frame.contentWindow); }catch(e){} };
+  }
+  const render = WIDGET_RENDER[def.id];
+  if(!render){ body.innerHTML = '<div class="widget-empty">未対応のウィジェット</div>'; return null; }
+  return render(body, inst.size);
+}
+function bindWidgetDrag(el, inst){
+  const head = el.querySelector('.widget-head');
+  head.addEventListener('pointerdown', function(e){
+    if(e.target.closest('.widget-act')) return;
+    _widgetDrag = { el:el, inst:inst, sx:e.clientX, sy:e.clientY, ox:inst.x || 24, oy:inst.y || 24 };
+    try{ head.setPointerCapture(e.pointerId); }catch(err){}
+  });
+}
+window.addEventListener('pointermove', function(e){
+  if(!_widgetDrag) return;
+  const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
+  const nx = clamp(_widgetDrag.ox + (e.clientX - _widgetDrag.sx), 0, window.innerWidth - 60);
+  const ny = clamp(_widgetDrag.oy + (e.clientY - _widgetDrag.sy), 0, window.innerHeight - tbh - 60);
+  _widgetDrag.el.style.left = nx + 'px';
+  _widgetDrag.el.style.top = ny + 'px';
+  _widgetDrag.nx = nx; _widgetDrag.ny = ny;
+});
+window.addEventListener('pointerup', function(){
+  if(!_widgetDrag) return;
+  const d = _widgetDrag; _widgetDrag = null;
+  if(typeof d.nx === 'number') Widgets.setPos(d.inst.instId, d.nx, d.ny);
+});
+function clearMountedWidgets(){
+  _widgetMounted.forEach(function(fn){ try{ fn(); }catch(e){} });
+  _widgetMounted.clear();
+}
+function renderWidgetLayer(){
+  const layer = $('widget-layer');
+  if(!layer) return;
+  layer.innerHTML = '';
+  Widgets.all().forEach(function(inst){ mountWidgetInstance(layer, inst, true); });
+}
+function renderWidgetPanel(){
+  const body = $('widget-panel-body');
+  if(!body) return;
+  body.innerHTML = '';
+  const items = Widgets.all();
+  if(!items.length){
+    body.innerHTML = '<div class="widget-empty-panel">ウィジェットがありません<br><button class="btn ghost sm" id="wpAddEmpty">追加する</button></div>';
+    const b = qs('#wpAddEmpty', body); if(b) b.addEventListener('click', showWidgetGallery);
+    return;
+  }
+  items.forEach(function(inst){ mountWidgetInstance(body, inst, false); });
+}
+/* Renders only the surface that's actually visible, so a hidden panel
+   or an inactive freeform layer never keeps live intervals running for
+   widgets nobody can see. */
+function applyWidgetLayoutMode(){
+  clearMountedWidgets();
+  const mode = Config.get().widgetLayoutMode === 'freeform' ? 'freeform' : 'panel';
+  const layer = $('widget-layer'), panel = $('widget-panel'), tbBtn = $('tb-widgets');
+  if(mode === 'freeform'){
+    if(tbBtn) tbBtn.classList.add('hidden');
+    if(panel){ panel.classList.remove('open'); panel.classList.add('hidden'); }
+    renderWidgetLayer();
+  } else {
+    if(layer) layer.innerHTML = '';
+    if(tbBtn) tbBtn.classList.remove('hidden');
+    renderWidgetPanel();
+  }
+}
+function refreshWidgetSurface(){ applyWidgetLayoutMode(); }
+function openWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  renderWidgetPanel();
+  if(p.classList.contains('open')) return;
+  p.classList.remove('hidden');
+  requestAnimationFrame(function(){ p.classList.add('open'); });
+}
+function closeWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  p.classList.remove('open');
+  setTimeout(function(){ if(!p.classList.contains('open')) p.classList.add('hidden'); }, 260);
+}
+function toggleWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  if(p.classList.contains('open')) closeWidgetPanel(); else openWidgetPanel();
+}
+function showWidgetGallery(){
+  const items = Widgets.catalog();
+  showModal(
+    '<div class="m-title">ウィジェットを追加</div>' +
+    (items.length
+      ? '<div class="widget-gallery"></div>'
+      : '<div class="m-sub">追加できるウィジェットがありません。ウィジェット対応アプリをインストールしてください。</div>') +
+    '<div class="m-acts"><button class="btn ghost" id="wgClose">閉じる</button></div>',
+    function(c){
+      const gallery = c.querySelector('.widget-gallery');
+      if(gallery){
+        items.forEach(function(def){
+          const card = document.createElement('div');
+          card.className = 'widget-gcard';
+          const color = isHexColor(def.color) ? def.color : '#6b769a';
+          card.innerHTML = '<div class="widget-gicon" style="background:' + color + '22;color:' + color + ';"></div><div class="widget-gname"></div><div class="widget-gsizes"></div>';
+          card.querySelector('.widget-gicon').textContent = def.icon || '▣';
+          card.querySelector('.widget-gname').textContent = def.name;
+          card.querySelector('.widget-gsizes').textContent = def.sizes.join(' / ');
+          card.addEventListener('click', function(){
+            Widgets.add(def.id, def.sizes[0]).then(function(){
+              hideModal();
+              refreshWidgetSurface();
+              if(Config.get().widgetLayoutMode === 'panel') openWidgetPanel();
+              showToast({ title:'ウィジェットを追加しました', body:def.name, icon:def.icon || '▣' });
+            });
+          });
+          gallery.appendChild(card);
+        });
+      }
+      c.querySelector('#wgClose').addEventListener('click', hideModal);
+    }
+  );
+}
+$('tb-widgets').addEventListener('click', toggleWidgetPanel);
+$('wpAddBtn').addEventListener('click', showWidgetGallery);
+$('wpCloseBtn').addEventListener('click', closeWidgetPanel);
+</script>
 <script>
 'use strict';
 const SDK_TEXT =
@@ -3902,6 +4376,14 @@ SYS_RENDER.settings = async function(root, win){
           '<div class="row"><span>ターミナルの起動メッセージ</span><div class="switch" id="tgGreet"></div></div>' +
         '</div>' +
 
+        '<div class="sect">ウィジェット</div>' +
+        '<div class="card">' +
+          '<div class="row"><span>配置</span></div>' +
+          '<div class="seg" id="sgWidgetLayout"><button data-v="panel">専用パネル</button><button data-v="freeform">自由配置</button></div>' +
+          '<div class="hint" style="margin-top:10px;">専用パネル: タスクバーのボタンから開く一覧に表示します。<br>自由配置: デスクトップ上に直接ドラッグして配置します。</div>' +
+          '<div class="row" style="margin-top:12px;"><span>ウィジェットを追加</span><button class="btn ghost sm" id="btAddWidget">追加</button></div>' +
+        '</div>' +
+
         '<div class="sect">システムファイル</div>' +
         '<div class="card">' +
           '<div class="hint" style="margin-bottom:10px;">OSの設定はすべて /System 以下の実ファイルです。直接編集すると即座に反映されます。壊した場合はセーフモードで起動してください。</div>' +
@@ -3956,6 +4438,8 @@ SYS_RENDER.settings = async function(root, win){
     bindSwitch('#tgHidden', c.showHiddenFiles, function(v){ Config.update({ showHiddenFiles:v }).then(refreshFilesViews); });
     bindSwitch('#tgConfirm', c.confirmDelete, function(v){ Config.update({ confirmDelete:v }); });
     bindSwitch('#tgGreet', c.terminalGreeting, function(v){ Config.update({ terminalGreeting:v }); });
+    bindSeg('#sgWidgetLayout', c.widgetLayoutMode, function(v){ Config.update({ widgetLayoutMode:v }).then(function(){ applyWidgetLayoutMode(); draw(); }); });
+    qs('#btAddWidget', root).addEventListener('click', showWidgetGallery);
 
     const accents = ['#22d3ee','#f0468c','#3ddc97','#ffb547','#8b5cf6','#ef4444','#a8b3d4'];
     qs('#swAccent', root).innerHTML = accents.map(function(a){
@@ -4893,6 +5377,13 @@ $('desk').addEventListener('contextmenu', function(e){
     { icon:'⚙', label:'設定', onSelect:function(){ launchApp('settings'); } },
     { icon:'⚡', label:'UEFI Setup を開く', onSelect:function(){ openSetupFromOS(); } }
   ];
+  if(!Boot.isSafe()){
+    items.push({ sep:true });
+    items.push({ icon:'▦', label:'ウィジェットを追加', onSelect:showWidgetGallery });
+    if(Config.get().widgetLayoutMode === 'panel'){
+      items.push({ icon:'▤', label:'ウィジェットパネルを開く', onSelect:toggleWidgetPanel });
+    }
+  }
   if(!MultiScreen.isSecondary && !Boot.isSafe() && Config.resolveMode() === 'desktop'){
     items.push({ sep:true });
     items.push({ icon:'🖥', label:'新しい画面を開く（マルチモニター）', onSelect:openSecondScreenFlow });
@@ -4989,6 +5480,7 @@ async function bootOS(){
     await bootLog('registry ready — ' + reg.count + ' user app(s)', 'ok');
     await Desktops.load();
     await bootLog('desktops ready — ' + Desktops.all().length + ' space(s)', 'ok');
+    await Widgets.load();
     const nv = NVRAM.get();
     await bootLog('resources: ' + nv.memory.sizeMB + 'MB / ' + nv.cpu.cores + ' cores / secureboot ' + (nv.secureBoot.enabled ? 'on' : 'off'), 'ok');
     await bootLog('window manager online', 'ok');
@@ -5018,6 +5510,7 @@ function finish(){
   renderDesktop();
   WM.renderTasks();
   renderDesktopSwitcher();
+  applyWidgetLayoutMode();
   tickClock();
   if(Boot.isSafe()){
     showToast({ title:'セーフモードで起動しました', body:'サードパーティアプリとカスタムテーマは無効です。修復後、UEFI Setup の Boot Target を戻してください。', icon:'⚠', type:'warn', ttl:9000 });
@@ -5036,9 +5529,12 @@ MultiScreen.onMessage(function(type){
     VFS.mount().then(Registry.load).then(function(){
       renderDesktop();
       if(typeof refreshStore === 'function') refreshStore();
+      applyWidgetLayoutMode();
     });
   } else if(type === 'config-changed'){
-    Config.reload();
+    Config.reload().then(applyWidgetLayoutMode);
+  } else if(type === 'widgets-changed'){
+    VFS.mount().then(Widgets.load).then(applyWidgetLayoutMode);
   }
 });
 /* Autostart is skipped entirely in safe mode -- an app that crashes the
@@ -5066,6 +5562,7 @@ async function recover(safe){
   try{ await Permissions.load(); }catch(e){}
   try{ await Registry.load(); }catch(e){}
   try{ await Desktops.load(); }catch(e){}
+  try{ await Widgets.load(); }catch(e){}
   finish();
 }
 $('boot-safe').addEventListener('click', function(){ recover(true); });
