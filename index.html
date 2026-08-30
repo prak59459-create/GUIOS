@@ -701,7 +701,11 @@ const OS_NAME = 'Nebula 5 Gate';
 const OS_VERSION = '5.0.0';
 const OS_CODENAME = 'GATE';
 const CATALOG_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOSappstore/main/catalog.json';
-const OS_SOURCE_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOSappstore/main/Nebula5Gate.html';
+/* Points at this OS's own repo, not the app-store repo -- the update
+   checker compares OS_VERSION against whatever main currently ships,
+   which is only ever true of GUIOS itself. The old URL 404'd, so the
+   "check for update" button in Settings could never find a version. */
+const OS_SOURCE_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOS/main/index.html';
 
 /* ---------------- utils ---------------- */
 const $ = (id) => document.getElementById(id);
