@@ -241,6 +241,43 @@ html[data-mode="mobile"] #tb-tasks{ display:none; }
 #lch-close{ position:absolute; top:calc(16px + var(--safe-t)); right:max(16px,var(--safe-r)); width:32px; height:32px; border-radius:50%; border:1px solid var(--line-hot); background:var(--void-2); color:var(--ink-1); cursor:pointer; touch-action:manipulation; }
 @media (max-width:420px){ #lch-grid{ grid-template-columns:repeat(auto-fill,80px); gap:16px 4px; } #lch-grid .glyph{ width:54px; height:54px; font-size:25px; } }
 
+/* ---------- login screen ---------- */
+#login{
+  position:fixed; inset:0; z-index:99000; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity var(--t-slow) var(--ease);
+}
+#login.on{ opacity:1; pointer-events:auto; }
+#login.hidden{ display:none; }
+#login-bg{ position:absolute; inset:0; filter:blur(34px) brightness(.66) saturate(1.1); transform:scale(1.08); }
+#login-clock{ position:relative; margin-bottom:34px; text-align:center; color:var(--ink-0); text-shadow:0 2px 18px rgba(0,0,0,.5); }
+#login-time{ display:block; font-family:var(--font-mono); font-size:56px; font-weight:700; letter-spacing:.02em; line-height:1; }
+#login-clock small{ display:block; font-size:13px; color:var(--ink-1); margin-top:8px; }
+.login-card{
+  position:relative; width:min(300px,88vw); display:flex; flex-direction:column; align-items:center;
+  background:color-mix(in srgb, var(--void-1) 74%, transparent); border:1px solid var(--line-hot); border-radius:var(--r-lg);
+  box-shadow:var(--sh-3); backdrop-filter:blur(24px) saturate(1.3); -webkit-backdrop-filter:blur(24px) saturate(1.3);
+  padding:26px 22px 22px;
+}
+.login-card.shake{ animation:loginShake .38s var(--ease); }
+@keyframes loginShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-9px); } 40%{ transform:translateX(8px); } 60%{ transform:translateX(-6px); } 80%{ transform:translateX(4px); } }
+.login-avatar{
+  width:74px; height:74px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:34px;
+  background:linear-gradient(155deg,var(--signal),var(--signal-deep)); box-shadow:var(--sh-2); margin-bottom:12px;
+}
+#login-name{ font-size:14px; font-weight:700; color:var(--ink-0); margin-bottom:16px; }
+#login-form{ width:100%; display:flex; gap:8px; }
+#login-pass{
+  flex:1; min-width:0; background:var(--void-2); border:1px solid var(--line); border-radius:var(--r-full);
+  padding:10px 16px; color:var(--ink-0); font-size:13px; outline:none;
+}
+#login-pass:focus{ border-color:var(--signal); }
+#login-unlock{
+  width:38px; height:38px; flex-shrink:0; border-radius:50%; border:none; background:var(--signal); color:var(--void-0);
+  font-size:15px; cursor:pointer; touch-action:manipulation;
+}
+#login-unlock:hover{ filter:brightness(1.12); }
+#login-err{ min-height:16px; font-size:11.5px; color:var(--alert); margin-top:10px; }
+
 /* ---------- windows ---------- */
 #win-layer{ position:absolute; inset:0; z-index:var(--z-win); pointer-events:none; }
 .win{
@@ -479,6 +516,25 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
 .wp{ aspect-ratio:1.5; border-radius:var(--r-sm); cursor:pointer; border:2px solid transparent; position:relative; touch-action:manipulation; }
 .wp.on{ border-color:var(--signal); }
 .wp span{ position:absolute; left:6px; bottom:5px; font-size:9.5px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.85); }
+
+/* ---------- settings: sidebar-categorized layout ---------- */
+.stg-shell{ display:flex; width:100%; height:100%; }
+.stg-nav{ width:212px; flex-shrink:0; overflow-y:auto; -webkit-overflow-scrolling:touch; border-right:1px solid var(--line); background:var(--void-1); padding:14px 10px; }
+.stg-nav-head{ font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-2); padding:4px 10px 10px; }
+.stg-nav-item{
+  width:100%; display:flex; align-items:center; gap:10px; padding:7px 9px; margin-bottom:2px; border-radius:var(--r-sm);
+  border:none; background:none; color:var(--ink-1); font-size:12.5px; font-weight:600; text-align:left; cursor:pointer; touch-action:manipulation;
+}
+.stg-nav-item:hover{ background:var(--void-2); color:var(--ink-0); }
+.stg-nav-item.on{ background:var(--signal); color:var(--void-0); }
+.stg-nav-ico{ width:24px; height:24px; border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+.stg-body{ flex:1; min-width:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+@media (max-width:560px){
+  .stg-shell{ flex-direction:column; }
+  .stg-nav{ width:100%; display:flex; align-items:center; gap:4px; overflow-x:auto; overflow-y:hidden; border-right:none; border-bottom:1px solid var(--line); padding:10px; }
+  .stg-nav-head{ display:none; }
+  .stg-nav-item{ width:auto; flex-shrink:0; white-space:nowrap; margin-bottom:0; }
+}
 </style>
 </head>
 <body>
@@ -547,6 +603,20 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
       </div>
     </div>
     <div id="widget-panel-body"></div>
+  </div>
+</div>
+
+<div id="login" class="hidden">
+  <div id="login-bg"></div>
+  <div id="login-clock"><span id="login-time">--:--</span><small id="login-date"></small></div>
+  <div class="login-card">
+    <div class="login-avatar">👤</div>
+    <div id="login-name">nebula</div>
+    <form id="login-form">
+      <input type="password" id="login-pass" placeholder="パスワード" autocomplete="current-password">
+      <button type="submit" id="login-unlock" title="サインイン">➜</button>
+    </form>
+    <div id="login-err"></div>
   </div>
 </div>
 
@@ -791,13 +861,16 @@ const MultiScreen = (function(){
 
   async function openSecondScreen(){
     const url = location.origin + location.pathname + '?screen=2';
-    /* getScreenDetails() itself triggers a permission prompt the first
-       time it's called, which would stall this click handler waiting on
-       the person to answer it. So only ever call it when the permission
-       was already granted in an earlier visit; every other case (never
-       asked, denied, or the API missing entirely) falls straight through
-       to a plain window.open() the person can drag to the other monitor
-       by hand. */
+    /* window.open() must run synchronously inside the click gesture or
+       browsers popup-block it -- so open it first, unconditionally, and
+       only *afterwards* try to reposition it onto an actual second
+       physical display. That reposition needs the Window Management
+       permission; requestScreenManagement() is the explicit, dedicated
+       gesture (a Settings button) that asks for it, since asking here
+       too would risk the permission prompt eating the gesture the popup
+       needs. */
+    const w = window.open(url, 'n5-secondary');
+    if(!w) return 'blocked';
     try{
       if('getScreenDetails' in window && navigator.permissions && navigator.permissions.query){
         const status = await navigator.permissions.query({ name: 'window-management' });
@@ -805,18 +878,33 @@ const MultiScreen = (function(){
           const details = await window.getScreenDetails();
           const other = details.screens.find(function(s){ return s !== details.currentScreen; });
           if(other){
-            window.open(url, 'n5-secondary',
-              'left=' + other.availLeft + ',top=' + other.availTop + ',width=' + other.availWidth + ',height=' + other.availHeight);
+            w.moveTo(other.availLeft, other.availTop);
+            w.resizeTo(other.availWidth, other.availHeight);
             return 'placed';
           }
         }
       }
-    }catch(e){ /* API unsupported, or this browser doesn't recognize the permission name */ }
-    const w = window.open(url, 'n5-secondary');
-    return w ? 'opened' : 'blocked';
+    }catch(e){ /* API unsupported, permission not granted, or this browser doesn't recognize it */ }
+    return 'opened';
   }
 
-  return { isSecondary: isSecondary, hasChannel: !!channel, openSecondScreen: openSecondScreen, broadcast: broadcast, onMessage: onMessage };
+  /* A real, user-visible way to grant Window Management access -- without
+     this, openSecondScreen()'s auto-placement path could never activate
+     for anyone, since nothing else in the app ever asks. Must be called
+     from its own dedicated click (a Settings button), not folded into
+     openSecondScreen() itself. */
+  async function requestScreenManagement(){
+    if(!('getScreenDetails' in window)) return { ok:false, reason:'unsupported' };
+    try{
+      const details = await window.getScreenDetails();
+      return { ok:true, screenCount: details.screens.length };
+    }catch(e){ return { ok:false, reason:(e && e.message) || String(e) }; }
+  }
+
+  return {
+    isSecondary: isSecondary, hasChannel: !!channel, openSecondScreen: openSecondScreen,
+    requestScreenManagement: requestScreenManagement, broadcast: broadcast, onMessage: onMessage
+  };
 })();
 
 /* ---------------- tiered storage backend ----------------
@@ -1143,23 +1231,48 @@ const DEFAULT_CONFIG = {
   terminalGreeting: true,
   widgetLayoutMode: 'panel'
 };
-const DEFAULT_THEME = {
-  name: 'Void',
-  tokens: {
-    '--void-0':'#05060b', '--void-1':'#0a0d17', '--void-2':'#111524', '--void-3':'#1a1f33', '--void-4':'#252c45',
-    '--line':'#252c45', '--line-hot':'#39456b',
-    '--ink-0':'#eef2ff', '--ink-1':'#a8b3d4', '--ink-2':'#6b769a',
-    '--signal':'#22d3ee', '--alert':'#f0468c', '--good':'#3ddc97', '--warn':'#ffb547',
-    '--taskbar-h':'54px'
-  }
+/* theme.json holds hand-edited token OVERRIDES on top of whichever
+   base theme (Void/Lumen) is active in Settings -- empty by default,
+   so it never fights the theme switch. It used to ship pre-filled
+   with a full copy of the dark palette, which -- since Theme.apply()
+   sets every token it holds as an inline style, and inline styles beat
+   the html[data-theme="lumen"] stylesheet rule no matter what -- meant
+   Lumen could never actually render light. LEGACY_STOCK_THEME_TOKENS
+   is kept only so an existing /System/theme.json written before this
+   fix, which is that old stock copy and not a real customization, is
+   recognized and migrated back to empty rather than permanently
+   pinning every session to dark. */
+const DEFAULT_THEME = { name:'Default', tokens:{} };
+const LEGACY_STOCK_THEME_TOKENS = {
+  '--void-0':'#05060b', '--void-1':'#0a0d17', '--void-2':'#111524', '--void-3':'#1a1f33', '--void-4':'#252c45',
+  '--line':'#252c45', '--line-hot':'#39456b',
+  '--ink-0':'#eef2ff', '--ink-1':'#a8b3d4', '--ink-2':'#6b769a',
+  '--signal':'#22d3ee', '--alert':'#f0468c', '--good':'#3ddc97', '--warn':'#ffb547',
+  '--taskbar-h':'54px'
 };
+function isLegacyStockTheme(tokens){
+  const keys = Object.keys(tokens || {});
+  const legacyKeys = Object.keys(LEGACY_STOCK_THEME_TOKENS);
+  if(keys.length !== legacyKeys.length) return false;
+  return legacyKeys.every(function(k){ return tokens[k] === LEGACY_STOCK_THEME_TOKENS[k]; });
+}
+/* Every gradient is built from theme tokens (--void-0..4, --signal,
+   --alert, etc.) rather than hardcoded hex, so switching Void/Lumen
+   re-tints the wallpaper automatically through the CSS cascade instead
+   of leaving a dark backdrop underneath a "light" theme. */
 const WALLPAPERS = [
-  { id:'gate',   name:'Gate',   css:'radial-gradient(ellipse at 50% 0%, #16233f 0%, #05060b 62%)' },
-  { id:'nebula', name:'Nebula', css:'radial-gradient(circle at 22% 18%, rgba(240,70,140,.28), transparent 46%), radial-gradient(circle at 78% 72%, rgba(34,211,238,.24), transparent 50%), #05060b' },
-  { id:'grid',   name:'Grid',   css:'linear-gradient(rgba(34,211,238,.07) 1px, transparent 1px) 0 0/34px 34px, linear-gradient(90deg, rgba(34,211,238,.07) 1px, transparent 1px) 0 0/34px 34px, #05060b' },
-  { id:'dusk',   name:'Dusk',   css:'linear-gradient(168deg, #241832 0%, #0b0d1a 58%, #05060b 100%)' },
-  { id:'carbon', name:'Carbon', css:'repeating-linear-gradient(135deg, #0a0d17 0 9px, #0c0f1c 9px 18px)' },
-  { id:'flat',   name:'Flat',   css:'#05060b' }
+  { id:'gate',     name:'Gate',     css:'radial-gradient(ellipse at 50% 0%, var(--void-3) 0%, var(--void-0) 62%)' },
+  { id:'nebula',   name:'Nebula',   css:'radial-gradient(circle at 22% 18%, var(--alert-deep), transparent 46%), radial-gradient(circle at 78% 72%, var(--signal-deep), transparent 50%), var(--void-0)' },
+  { id:'grid',     name:'Grid',     css:'linear-gradient(var(--line) 1px, transparent 1px) 0 0/34px 34px, linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/34px 34px, var(--void-0)' },
+  { id:'dusk',     name:'Dusk',     css:'linear-gradient(168deg, var(--void-4) 0%, var(--void-1) 58%, var(--void-0) 100%)' },
+  { id:'carbon',   name:'Carbon',   css:'repeating-linear-gradient(135deg, var(--void-0) 0 9px, var(--void-1) 9px 18px)' },
+  { id:'flat',     name:'Flat',     css:'var(--void-0)' },
+  { id:'aurora',   name:'Aurora',   css:'linear-gradient(128deg, var(--signal-deep) 0%, transparent 32%, transparent 68%, var(--alert-deep) 100%), var(--void-0)' },
+  { id:'mesh',     name:'Mesh',     css:'radial-gradient(circle at 18% 24%, var(--signal-glow), transparent 40%), radial-gradient(circle at 82% 20%, var(--alert-deep), transparent 42%), radial-gradient(circle at 50% 88%, var(--signal-deep), transparent 46%), var(--void-0)' },
+  { id:'horizon',  name:'Horizon',  css:'linear-gradient(var(--void-1) 0%, var(--void-1) 48%, var(--line-hot) 49%, var(--line-hot) 50%, var(--void-0) 51%, var(--void-0) 100%)' },
+  { id:'rings',    name:'Rings',    css:'repeating-radial-gradient(circle at 50% 50%, var(--void-0) 0 26px, var(--void-1) 26px 30px), var(--void-0)' },
+  { id:'dots',     name:'Dots',     css:'radial-gradient(var(--line-hot) 1.6px, transparent 1.6px) 0 0/26px 26px, var(--void-0)' },
+  { id:'spectrum', name:'Spectrum', css:'linear-gradient(135deg, var(--signal-glow) 0%, transparent 24%, transparent 76%, var(--alert-deep) 100%), var(--void-1)' }
 ];
 const FS_SKELETON = [
   '/System', '/System/boot', '/System/themes', '/System/logs',
@@ -1315,8 +1428,12 @@ const Theme = (function(){
   function load(){
     if(Boot.isSafe()){ current = JSON.parse(JSON.stringify(DEFAULT_THEME)); return current; }
     const raw = VFS.exists('/System/theme.json') ? VFS.readJSON('/System/theme.json', null) : null;
-    if(raw && raw.tokens && typeof raw.tokens === 'object') current = raw;
-    else current = JSON.parse(JSON.stringify(DEFAULT_THEME));
+    if(raw && raw.tokens && typeof raw.tokens === 'object'){
+      if(isLegacyStockTheme(raw.tokens)){
+        current = JSON.parse(JSON.stringify(DEFAULT_THEME));
+        VFS.writeJSON('/System/theme.json', current).catch(function(){});
+      } else current = raw;
+    } else current = JSON.parse(JSON.stringify(DEFAULT_THEME));
     return current;
   }
   function apply(){
@@ -1391,6 +1508,38 @@ const Permissions = (function(){
     return p;
   }
   return { load, ensure, state, set, listFor, all, clearApp };
+})();
+
+/* ---------------- account (login password) ----------------
+   Optional: with no password set, boot goes straight to the desktop
+   exactly as before. Setting one gates every boot (including safe
+   mode -- a login screen a Shift key bypasses isn't one) behind a
+   login screen. The hash is stored, never the password itself, using
+   the same integrityHash() used to sign app code, but this is still a
+   client-side hash with no salt or server boundary: anyone with access
+   to this browser's storage can read it out, same as the UEFI
+   supervisor password already does in plaintext. Forgetting it is
+   recoverable only via UEFI's "OSデータを初期化", which erases
+   everything -- there is no other way in, by design. */
+const Account = (function(){
+  const KEY = '/System/account.json';
+  let data = { passwordHash: null };
+  async function load(){
+    const raw = VFS.exists(KEY) ? VFS.readJSON(KEY, null) : null;
+    data = (raw && typeof raw === 'object') ? { passwordHash: raw.passwordHash || null } : { passwordHash: null };
+    return data;
+  }
+  async function save(){ await VFS.writeJSON(KEY, data); }
+  function hasPassword(){ return !!data.passwordHash; }
+  async function setPassword(plain){
+    data.passwordHash = plain ? await integrityHash(plain) : null;
+    await save();
+  }
+  async function verify(plain){
+    if(!data.passwordHash) return true;
+    return (await integrityHash(plain || '')) === data.passwordHash;
+  }
+  return { load, hasPassword, setPassword, verify };
 })();
 
 const WIDGET_SIZES = ['small', 'medium', 'large'];
@@ -3941,10 +4090,10 @@ $('fi-install').addEventListener('change', function(e){
 .w-shortcut-btn span{ font-size:9px; color:var(--ink-1); max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .w-uptime-val{ font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--ink-0); }
 .w-uptime-label{ font-size:9.5px; color:var(--ink-2); margin-top:4px; }
-.w-weather-icon{ font-size:30px; line-height:1; }
-.w-weather-temp{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--ink-0); margin-top:4px; }
-.w-weather-label{ font-size:10.5px; color:var(--ink-1); margin-top:2px; }
-.w-weather-note{ font-size:8.5px; color:var(--ink-2); margin-top:6px; }
+.w-net-status{ font-size:15px; font-weight:700; }
+.w-net-status.up{ color:var(--good); }
+.w-net-status.down{ color:var(--alert); }
+.w-net-type{ font-size:10px; color:var(--ink-2); margin-top:6px; }
 </style>
 <script>
 'use strict';
@@ -3967,7 +4116,7 @@ const BUILTIN_WIDGETS = [
   { id:'sys.quicknote', name:'クイックメモ',      icon:'📝', color:'#8b5cf6', sizes:['medium','large'] },
   { id:'sys.shortcuts', name:'ショートカット',    icon:'🚀', color:'#22d3ee', sizes:['medium','large'] },
   { id:'sys.uptime',    name:'稼働時間',          icon:'⏱', color:'#a8b3d4', sizes:['small'] },
-  { id:'sys.weather',   name:'天気（シミュレーション）', icon:'⛅', color:'#3fa0c9', sizes:['small','medium'] }
+  { id:'sys.network',   name:'ネットワーク',      icon:'📶', color:'#3fa0c9', sizes:['small','medium'] }
 ];
 const WIDGET_RENDER = {};
 WIDGET_RENDER['sys.clock'] = function(el, size){
@@ -4061,21 +4210,21 @@ WIDGET_RENDER['sys.uptime'] = function(el){
   const t = setInterval(draw, 1000);
   return function(){ clearInterval(t); };
 };
-WIDGET_RENDER['sys.weather'] = function(el){
-  /* No network access, so this is honestly labeled simulated data rather
-     than pretending to be a live feed -- same principle as TaskMgr's
-     measured-not-invented numbers, just the other direction: an app
-     that truly can't measure the weather says so instead of faking it. */
-  const conditions = [
-    { icon:'☀️', label:'晴れ' }, { icon:'☁️', label:'くもり' }, { icon:'🌧', label:'小雨' },
-    { icon:'⛅', label:'晴れときどきくもり' }, { icon:'🌤', label:'くもりのち晴れ' }
-  ];
-  const seed = new Date().toISOString().slice(0, 10).split('-').reduce(function(a, c){ return a + parseInt(c, 10); }, 0);
-  const c = conditions[seed % conditions.length];
-  const temp = 14 + (seed % 15);
-  el.innerHTML = '<div class="w-weather-icon">' + c.icon + '</div><div class="w-weather-temp">' + temp + '℃</div>' +
-    '<div class="w-weather-label">' + escapeHtml(c.label) + '</div><div class="w-weather-note">※ シミュレーション（オフライン）</div>';
-  return null;
+WIDGET_RENDER['sys.network'] = function(el){
+  /* Real browser state only -- navigator.onLine and the Network
+     Information API where the browser exposes it. No invented
+     adapters, addresses, or speeds. */
+  function draw(){
+    const online = navigator.onLine;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const type = conn && conn.effectiveType ? conn.effectiveType.toUpperCase() : '不明';
+    el.innerHTML = '<div class="w-net-status ' + (online ? 'up' : 'down') + '">' + (online ? '● オンライン' : '○ オフライン') + '</div>' +
+      '<div class="w-net-type">回線種別: ' + escapeHtml(type) + '</div>';
+  }
+  draw();
+  window.addEventListener('online', draw);
+  window.addEventListener('offline', draw);
+  return function(){ window.removeEventListener('online', draw); window.removeEventListener('offline', draw); };
 };
 
 const Widgets = (function(){
@@ -4354,121 +4503,235 @@ const APP_TEMPLATE = '<' + '!--N5-APP {"id":"my-app","name":"マイアプリ","i
 
 /* ---------------- Settings ---------------- */
 SYS_RENDER.settings = async function(root, win){
-  function draw(){
-    const c = Config.get();
+  const NAV = [
+    { id:'general',    icon:'⚙', color:'#6b7690', label:'一般' },
+    { id:'appearance', icon:'🎨', color:'#c026d3', label:'外観' },
+    { id:'account',    icon:'👤', color:'#2563eb', label:'アカウントとログイン' },
+    { id:'desktop',    icon:'🖥', color:'#0891b2', label:'デスクトップ' },
+    { id:'network',    icon:'📶', color:'#0284c7', label:'ネットワーク' },
+    { id:'security',   icon:'🛡', color:'#dc2626', label:'セキュリティ' },
+    { id:'storage',    icon:'🗄', color:'#d97706', label:'ストレージ' }
+  ];
+  let cat = 'general';
+
+  function shell(){
     root.innerHTML =
-      '<div class="page">' +
-        '<h2>⚙ 設定</h2><p class="sub">' + escapeHtml(OS_NAME) + ' ' + OS_VERSION + (Boot.isSafe() ? ' · セーフモード' : '') + '</p>' +
-
-        '<div class="sect">外観</div>' +
-        '<div class="card">' +
-          '<div class="row"><span>テーマ</span></div>' +
-          '<div class="seg" id="sgTheme"><button data-v="void">Void</button><button data-v="lumen">Lumen</button></div>' +
-          '<div class="row" style="margin-top:12px;"><span>アクセントカラー</span></div>' +
-          '<div class="sw-row" id="swAccent"></div>' +
-          '<div class="row" style="margin-top:12px;"><span>壁紙</span></div>' +
-          '<div class="wp-grid" id="wpGrid"></div>' +
+      '<div class="stg-shell">' +
+        '<div class="stg-nav">' +
+          '<div class="stg-nav-head">' + escapeHtml(OS_NAME) + '</div>' +
+          NAV.map(function(n){
+            return '<button class="stg-nav-item' + (n.id === cat ? ' on' : '') + '" data-cat="' + n.id + '">' +
+              '<span class="stg-nav-ico" style="background:' + n.color + '">' + n.icon + '</span>' + escapeHtml(n.label) + '</button>';
+          }).join('') +
         '</div>' +
-
-        '<div class="sect">動作</div>' +
-        '<div class="card">' +
-          '<div class="row"><span>表示モード</span></div>' +
-          '<div class="seg" id="sgMode"><button data-v="auto">自動</button><button data-v="desktop">デスクトップ</button><button data-v="mobile">モバイル</button></div>' +
-          '<div class="row" style="margin-top:8px;"><span>アニメーションを減らす</span><div class="switch" id="tgMotion"></div></div>' +
-          '<div class="row"><span>隠しファイルを表示</span><div class="switch" id="tgHidden"></div></div>' +
-          '<div class="row"><span>削除前に確認する</span><div class="switch" id="tgConfirm"></div></div>' +
-          '<div class="row"><span>ターミナルの起動メッセージ</span><div class="switch" id="tgGreet"></div></div>' +
-        '</div>' +
-
-        '<div class="sect">ウィジェット</div>' +
-        '<div class="card">' +
-          '<div class="row"><span>配置</span></div>' +
-          '<div class="seg" id="sgWidgetLayout"><button data-v="panel">専用パネル</button><button data-v="freeform">自由配置</button></div>' +
-          '<div class="hint" style="margin-top:10px;">専用パネル: タスクバーのボタンから開く一覧に表示します。<br>自由配置: デスクトップ上に直接ドラッグして配置します。</div>' +
-          '<div class="row" style="margin-top:12px;"><span>ウィジェットを追加</span><button class="btn ghost sm" id="btAddWidget">追加</button></div>' +
-        '</div>' +
-
-        '<div class="sect">システムファイル</div>' +
-        '<div class="card">' +
-          '<div class="hint" style="margin-bottom:10px;">OSの設定はすべて /System 以下の実ファイルです。直接編集すると即座に反映されます。壊した場合はセーフモードで起動してください。</div>' +
-          '<div class="row"><span class="mono" style="font-size:11px;">/System/config.json</span><button class="btn ghost sm" data-edit="/System/config.json">編集</button></div>' +
-          '<div class="row"><span class="mono" style="font-size:11px;">/System/theme.json</span><button class="btn ghost sm" data-edit="/System/theme.json">編集</button></div>' +
-          '<div class="row"><span class="mono" style="font-size:11px;">/System/registry.json</span><button class="btn ghost sm" data-edit="/System/registry.json">編集</button></div>' +
-          '<div class="row"><span class="mono" style="font-size:11px;">/System/permissions.json</span><button class="btn ghost sm" data-edit="/System/permissions.json">編集</button></div>' +
-          '<div class="row"><span>テーマを初期状態に戻す</span><button class="btn ghost sm" id="btThemeReset">リセット</button></div>' +
-        '</div>' +
-
-        '<div class="sect">ファームウェア (UEFI)</div>' +
-        '<div class="card">' +
-          '<div class="hint" style="margin-bottom:10px;">ハードウェア設定はファームウェア側で管理されます。OSからは変更できません（起動時に F2 / DEL でも入れます）。</div>' +
-          '<div class="row"><span>メモリ</span><b class="mono" style="font-size:11px;">' + NVRAM.get().memory.sizeMB + ' MB</b></div>' +
-          '<div class="row"><span>CPU コア</span><b class="mono" style="font-size:11px;">' + NVRAM.get().cpu.cores + ' (' + NVRAM.get().cpu.throttle + '%)</b></div>' +
-          '<div class="row"><span>アプリ容量上限</span><b class="mono" style="font-size:11px;">' + NVRAM.get().memory.quotaPerAppMB + ' MB</b></div>' +
-          '<div class="row"><span>Secure Boot</span><b class="mono" style="font-size:11px;color:' + (NVRAM.get().secureBoot.enabled ? 'var(--good)' : 'var(--warn)') + ';">' + (NVRAM.get().secureBoot.enabled ? 'ENABLED' : 'DISABLED') + '</b></div>' +
-          '<div class="row"><span>サンドボックス</span><b class="mono" style="font-size:11px;">' + (NVRAM.get().sandbox.strict ? 'STRICT' : 'STANDARD') + '</b></div>' +
-          '<div class="row"><span>UEFI Setup を開く</span><button class="btn ghost sm" id="btUefi">開く（要再起動）</button></div>' +
-        '</div>' +
-
-        '<div class="sect">権限</div><div class="card"><div id="pmList"></div></div>' +
-
-        '<div class="sect">ストレージ</div>' +
-        '<div class="card">' +
-          '<div class="row"><span>バックエンド</span><b class="mono" style="font-size:11px;">' + escapeHtml(Store.name) + '</b></div>' +
-          '<div class="row"><span>ファイルシステム</span><b class="mono" style="font-size:11px;">' + VFS.count() + ' nodes / ' + fmtBytes(VFS.totalBytes()) + '</b></div>' +
-          '<div class="row"><span>ファイルアプリで開く</span><button class="btn ghost sm" id="btOpenFs">/ を開く</button></div>' +
-        '</div>' +
-
-        '<div class="sect">バックアップ</div>' +
-        '<div class="card">' +
-          '<div class="hint" style="margin-bottom:10px;">ファイルシステム全体（アプリ・データ・設定・権限）を1つのファイルに書き出します。</div>' +
-          '<div class="row"><span>すべて書き出す</span><button class="btn ghost sm" id="btExport">書き出す</button></div>' +
-          '<div class="row"><span>バックアップから復元</span><button class="btn ghost sm" id="btImport">読み込む</button></div>' +
-        '</div>' +
-
-        '<div class="sect">' + escapeHtml(OS_NAME) + ' について</div>' +
-        '<div class="card">' +
-          '<div class="mono" style="font-size:15px;font-weight:700;">' + escapeHtml(OS_NAME) + ' <span style="color:var(--signal)">v' + OS_VERSION + '</span></div>' +
-          '<div class="hint" style="margin-top:6px;">仮想ファイルシステムを中核に据えたブラウザOS。設定・テーマ・アプリ本体はすべて実ファイルとして /System と /Applications に置かれ、ファイルアプリから直接編集できます。</div>' +
-          '<div class="row" style="margin-top:10px;"><span>ソフトウェアアップデート</span><button class="btn ghost sm" id="btUpd">確認</button></div>' +
-          '<div id="updStatus" class="upd-status"></div>' +
-        '</div>' +
-
-        '<button class="btn danger block" id="btReset" style="margin-top:14px;">⚠ OSを初期化（全データ削除）</button>' +
+        '<div class="stg-body page" id="stgBody"></div>' +
       '</div>';
+    qsa('[data-cat]', root).forEach(function(b){
+      b.addEventListener('click', function(){ cat = b.dataset.cat; shell(); });
+    });
+    renderBody();
+  }
 
-    bindSeg('#sgTheme', c.theme, function(v){ Config.update({ theme:v }).then(draw); });
-    bindSeg('#sgMode', c.deviceMode, function(v){ Config.update({ deviceMode:v }).then(function(){ WM.relayout(); draw(); }); });
+  function renderBody(){
+    const body = qs('#stgBody', root);
+    const c = Config.get();
+    if(cat === 'general') body.innerHTML = generalHTML();
+    else if(cat === 'appearance') body.innerHTML = appearanceHTML(c);
+    else if(cat === 'account') body.innerHTML = accountHTML();
+    else if(cat === 'desktop') body.innerHTML = desktopHTML(c);
+    else if(cat === 'network') body.innerHTML = networkHTML();
+    else if(cat === 'security') body.innerHTML = securityHTML();
+    else if(cat === 'storage') body.innerHTML = storageHTML();
+    bindCategory(c);
+  }
+
+  function generalHTML(){
+    return '<div class="page-h"><h2>⚙ 一般</h2><p class="sub">' + escapeHtml(OS_NAME) + ' ' + OS_VERSION + (Boot.isSafe() ? ' · セーフモード' : '') + '</p></div>' +
+      '<div class="sect">' + escapeHtml(OS_NAME) + ' について</div>' +
+      '<div class="card">' +
+        '<div class="mono" style="font-size:15px;font-weight:700;">' + escapeHtml(OS_NAME) + ' <span style="color:var(--signal)">v' + OS_VERSION + '</span></div>' +
+        '<div class="hint" style="margin-top:6px;">仮想ファイルシステムを中核に据えたブラウザOS。設定・テーマ・アプリ本体はすべて実ファイルとして /System と /Applications に置かれ、ファイルアプリから直接編集できます。</div>' +
+        '<div class="row" style="margin-top:10px;"><span>ソフトウェアアップデート</span><button class="btn ghost sm" id="btUpd">確認</button></div>' +
+        '<div id="updStatus" class="upd-status"></div>' +
+      '</div>' +
+      '<div class="sect">バックアップ</div>' +
+      '<div class="card">' +
+        '<div class="hint" style="margin-bottom:10px;">ファイルシステム全体（アプリ・データ・設定・権限）を1つのファイルに書き出します。</div>' +
+        '<div class="row"><span>すべて書き出す</span><button class="btn ghost sm" id="btExport">書き出す</button></div>' +
+        '<div class="row"><span>バックアップから復元</span><button class="btn ghost sm" id="btImport">読み込む</button></div>' +
+      '</div>' +
+      '<div class="sect">システムファイル（上級者向け）</div>' +
+      '<div class="card">' +
+        '<div class="hint" style="margin-bottom:10px;">OSの設定はすべて /System 以下の実ファイルです。直接編集すると即座に反映されます。壊した場合はセーフモードで起動してください。</div>' +
+        '<div class="row"><span class="mono" style="font-size:11px;">/System/config.json</span><button class="btn ghost sm" data-edit="/System/config.json">編集</button></div>' +
+        '<div class="row"><span class="mono" style="font-size:11px;">/System/theme.json</span><button class="btn ghost sm" data-edit="/System/theme.json">編集</button></div>' +
+        '<div class="row"><span class="mono" style="font-size:11px;">/System/registry.json</span><button class="btn ghost sm" data-edit="/System/registry.json">編集</button></div>' +
+        '<div class="row"><span class="mono" style="font-size:11px;">/System/permissions.json</span><button class="btn ghost sm" data-edit="/System/permissions.json">編集</button></div>' +
+        '<div class="row"><span>テーマを初期状態に戻す</span><button class="btn ghost sm" id="btThemeReset">リセット</button></div>' +
+      '</div>' +
+      '<div class="sect">初期化</div>' +
+      '<div class="card">' +
+        '<div class="hint" style="margin-bottom:10px;">OSが起動しなくなった場合は、起動時に F2 / DEL で UEFI Setup に入り、そこからも初期化できます。</div>' +
+        '<button class="btn danger block" id="btReset">⚠ OSを初期化（全データ削除）</button>' +
+      '</div>';
+  }
+
+  function appearanceHTML(c){
+    return '<div class="page-h"><h2>🎨 外観</h2></div>' +
+      '<div class="sect">テーマ</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>配色</span></div>' +
+        '<div class="seg" id="sgTheme"><button data-v="void">Void（ダーク）</button><button data-v="lumen">Lumen（ライト）</button></div>' +
+        '<div class="row" style="margin-top:12px;"><span>アクセントカラー</span></div>' +
+        '<div class="sw-row" id="swAccent"></div>' +
+      '</div>' +
+      '<div class="sect">壁紙</div>' +
+      '<div class="card"><div class="wp-grid" id="wpGrid"></div></div>';
+  }
+
+  function accountHTML(){
+    const set = Account.hasPassword();
+    return '<div class="page-h"><h2>👤 アカウントとログイン</h2><p class="sub">起動時に表示するログイン画面を設定します。</p></div>' +
+      '<div class="sect">ログインパスワード</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>状態</span><b class="mono" style="font-size:11px;color:' + (set ? 'var(--good)' : 'var(--ink-2)') + ';">' + (set ? 'SET' : 'NOT SET') + '</b></div>' +
+        '<div class="row"><span>' + (set ? 'パスワードを変更 / 解除' : 'パスワードを設定') + '</span><button class="btn ghost sm" id="btSetPass">' + (set ? '変更' : '設定') + '</button></div>' +
+        '<div class="hint" style="margin-top:10px;">設定すると、次回起動時からログイン画面が表示されます（セーフモードでも要求されます）。<br>忘れた場合の復旧方法は UEFI Setup の「OSデータを初期化」のみです（すべてのデータが失われます）。</div>' +
+      '</div>';
+  }
+
+  function desktopHTML(c){
+    return '<div class="page-h"><h2>🖥 デスクトップ</h2></div>' +
+      '<div class="sect">動作</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>表示モード</span></div>' +
+        '<div class="seg" id="sgMode"><button data-v="auto">自動</button><button data-v="desktop">デスクトップ</button><button data-v="mobile">モバイル</button></div>' +
+        '<div class="row" style="margin-top:8px;"><span>アニメーションを減らす</span><div class="switch" id="tgMotion"></div></div>' +
+        '<div class="row"><span>隠しファイルを表示</span><div class="switch" id="tgHidden"></div></div>' +
+        '<div class="row"><span>削除前に確認する</span><div class="switch" id="tgConfirm"></div></div>' +
+        '<div class="row"><span>ターミナルの起動メッセージ</span><div class="switch" id="tgGreet"></div></div>' +
+      '</div>' +
+      '<div class="sect">ウィジェット</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>配置</span></div>' +
+        '<div class="seg" id="sgWidgetLayout"><button data-v="panel">専用パネル</button><button data-v="freeform">自由配置</button></div>' +
+        '<div class="hint" style="margin-top:10px;">専用パネル: タスクバーのボタンから開く一覧に表示します。<br>自由配置: デスクトップ上に直接ドラッグして配置します。</div>' +
+        '<div class="row" style="margin-top:12px;"><span>ウィジェットを追加</span><button class="btn ghost sm" id="btAddWidget">追加</button></div>' +
+      '</div>' +
+      '<div class="sect">ディスプレイ</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>新しい画面を開く</span><button class="btn ghost sm" id="btNewScreen">開く</button></div>' +
+        '<div class="row"><span>複数モニターへのアクセスを許可</span><button class="btn ghost sm" id="btScreenPerm">許可する</button></div>' +
+        '<div class="hint" style="margin-top:10px;">許可すると、物理的に2台目のモニターがある場合に新しい画面を自動でそこへ配置します。許可しない場合も画面は開けます — 手動でモニターへドラッグしてください。</div>' +
+      '</div>';
+  }
+
+  function networkHTML(){
+    const online = navigator.onLine;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    return '<div class="page-h"><h2>📶 ネットワーク</h2><p class="sub">ブラウザから取得できる実際の接続状態のみを表示します。</p></div>' +
+      '<div class="sect">状態</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>接続</span><b class="mono" style="font-size:11px;color:' + (online ? 'var(--good)' : 'var(--alert)') + ';">' + (online ? 'オンライン' : 'オフライン') + '</b></div>' +
+        '<div class="row"><span>回線種別</span><b class="mono" style="font-size:11px;">' + (conn && conn.effectiveType ? escapeHtml(String(conn.effectiveType).toUpperCase()) : '取得できません') + '</b></div>' +
+        (conn && typeof conn.downlink === 'number' ? '<div class="row"><span>推定回線速度</span><b class="mono" style="font-size:11px;">' + conn.downlink + ' Mbps</b></div>' : '') +
+        (conn && typeof conn.saveData === 'boolean' ? '<div class="row"><span>データセーバー</span><b class="mono" style="font-size:11px;">' + (conn.saveData ? 'ON' : 'OFF') + '</b></div>' : '') +
+        '<div class="hint" style="margin-top:10px;">このOSはブラウザのサンドボックス内で動作しており、実際のネットワークアダプタやIPアドレスにはアクセスできません。ここに表示されるのは、このブラウザが実際に報告する値のみです。</div>' +
+      '</div>' +
+      '<div class="sect">ホスト名</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>ホスト名</span><b class="mono" style="font-size:11px;">' + escapeHtml(NVRAM.get().system.hostname || 'nebula') + '</b></div>' +
+        '<div class="row"><span>変更するには</span><button class="btn ghost sm" id="btNetUefi">UEFI Setup を開く</button></div>' +
+      '</div>';
+  }
+
+  function securityHTML(){
+    const nv = NVRAM.get();
+    return '<div class="page-h"><h2>🛡 セキュリティ</h2></div>' +
+      '<div class="sect">権限</div><div class="card"><div id="pmList"></div></div>' +
+      '<div class="sect">ファームウェア (UEFI)</div>' +
+      '<div class="card">' +
+        '<div class="hint" style="margin-bottom:10px;">ハードウェア設定はファームウェア側で管理されます。OSからは変更できません（起動時に F2 / DEL でも入れます）。</div>' +
+        '<div class="row"><span>Secure Boot</span><b class="mono" style="font-size:11px;color:' + (nv.secureBoot.enabled ? 'var(--good)' : 'var(--warn)') + ';">' + (nv.secureBoot.enabled ? 'ENABLED' : 'DISABLED') + '</b></div>' +
+        '<div class="row"><span>サンドボックス</span><b class="mono" style="font-size:11px;">' + (nv.sandbox.strict ? 'STRICT' : 'STANDARD') + '</b></div>' +
+        '<div class="row"><span>Supervisor Password</span><b class="mono" style="font-size:11px;">' + (nv.system.supervisor ? 'SET' : 'NOT SET') + '</b></div>' +
+        '<div class="row"><span>UEFI Setup を開く</span><button class="btn ghost sm" id="btUefi">開く（要再起動）</button></div>' +
+      '</div>';
+  }
+
+  function storageHTML(){
+    return '<div class="page-h"><h2>🗄 ストレージ</h2></div>' +
+      '<div class="sect">ディスク</div>' +
+      '<div class="card">' +
+        '<div class="row"><span>バックエンド</span><b class="mono" style="font-size:11px;">' + escapeHtml(Store.name) + '</b></div>' +
+        '<div class="row"><span>ファイルシステム</span><b class="mono" style="font-size:11px;">' + VFS.count() + ' nodes / ' + fmtBytes(VFS.totalBytes()) + '</b></div>' +
+        '<div class="row"><span>ファイルアプリで開く</span><button class="btn ghost sm" id="btOpenFs">/ を開く</button></div>' +
+      '</div>';
+  }
+
+  function bindCategory(c){
+    const root2 = root;
+    bindSeg('#sgTheme', c.theme, function(v){ Config.update({ theme:v }).then(renderBody); });
+    bindSeg('#sgMode', c.deviceMode, function(v){ Config.update({ deviceMode:v }).then(function(){ WM.relayout(); renderBody(); }); });
     bindSwitch('#tgMotion', c.reduceMotion, function(v){ Config.update({ reduceMotion:v }); });
     bindSwitch('#tgHidden', c.showHiddenFiles, function(v){ Config.update({ showHiddenFiles:v }).then(refreshFilesViews); });
     bindSwitch('#tgConfirm', c.confirmDelete, function(v){ Config.update({ confirmDelete:v }); });
     bindSwitch('#tgGreet', c.terminalGreeting, function(v){ Config.update({ terminalGreeting:v }); });
-    bindSeg('#sgWidgetLayout', c.widgetLayoutMode, function(v){ Config.update({ widgetLayoutMode:v }).then(function(){ applyWidgetLayoutMode(); draw(); }); });
-    qs('#btAddWidget', root).addEventListener('click', showWidgetGallery);
+    bindSeg('#sgWidgetLayout', c.widgetLayoutMode, function(v){ Config.update({ widgetLayoutMode:v }).then(function(){ applyWidgetLayoutMode(); renderBody(); }); });
+    const btAddWidget = qs('#btAddWidget', root2); if(btAddWidget) btAddWidget.addEventListener('click', showWidgetGallery);
 
-    const accents = ['#22d3ee','#f0468c','#3ddc97','#ffb547','#8b5cf6','#ef4444','#a8b3d4'];
-    qs('#swAccent', root).innerHTML = accents.map(function(a){
-      return '<div class="sw' + (a.toLowerCase() === String(c.accent).toLowerCase() ? ' on' : '') + '" data-a="' + a + '" style="background:' + a + '"></div>';
-    }).join('') + '<input type="color" id="cpAccent" value="' + escapeHtml(isHexColor(c.accent) ? c.accent : '#22d3ee') + '" style="width:30px;height:30px;border:none;background:none;padding:0;cursor:pointer;">';
-    qsa('.sw', root).forEach(function(s){ s.addEventListener('click', function(){ Config.update({ accent:s.dataset.a }).then(draw); }); });
-    qs('#cpAccent', root).addEventListener('change', function(e){ Config.update({ accent:e.target.value }).then(draw); });
+    const swAccent = qs('#swAccent', root2);
+    if(swAccent){
+      const accents = ['#22d3ee','#f0468c','#3ddc97','#ffb547','#8b5cf6','#ef4444','#a8b3d4'];
+      swAccent.innerHTML = accents.map(function(a){
+        return '<div class="sw' + (a.toLowerCase() === String(c.accent).toLowerCase() ? ' on' : '') + '" data-a="' + a + '" style="background:' + a + '"></div>';
+      }).join('') + '<input type="color" id="cpAccent" value="' + escapeHtml(isHexColor(c.accent) ? c.accent : '#22d3ee') + '" style="width:30px;height:30px;border:none;background:none;padding:0;cursor:pointer;">';
+      qsa('.sw', root2).forEach(function(s){ s.addEventListener('click', function(){ Config.update({ accent:s.dataset.a }).then(renderBody); }); });
+      qs('#cpAccent', root2).addEventListener('change', function(e){ Config.update({ accent:e.target.value }).then(renderBody); });
+    }
 
-    qs('#wpGrid', root).innerHTML = WALLPAPERS.map(function(w2){
-      return '<div class="wp' + (c.wallpaper === w2.id ? ' on' : '') + '" data-w="' + w2.id + '" style="background:' + w2.css + '"><span>' + escapeHtml(w2.name) + '</span></div>';
-    }).join('');
-    qsa('.wp', root).forEach(function(el){ el.addEventListener('click', function(){ Config.update({ wallpaper:el.dataset.w }).then(draw); }); });
+    const wpGrid = qs('#wpGrid', root2);
+    if(wpGrid){
+      wpGrid.innerHTML = WALLPAPERS.map(function(w2){
+        return '<div class="wp' + (c.wallpaper === w2.id ? ' on' : '') + '" data-w="' + w2.id + '" style="background:' + w2.css + '"><span>' + escapeHtml(w2.name) + '</span></div>';
+      }).join('');
+      qsa('.wp', root2).forEach(function(el){ el.addEventListener('click', function(){ Config.update({ wallpaper:el.dataset.w }).then(renderBody); }); });
+    }
 
-    qsa('[data-edit]', root).forEach(function(b){ b.addEventListener('click', function(){ openEditor(b.dataset.edit); }); });
-    qs('#btThemeReset', root).addEventListener('click', async function(){
+    qsa('[data-edit]', root2).forEach(function(b){ b.addEventListener('click', function(){ openEditor(b.dataset.edit); }); });
+    const btThemeReset = qs('#btThemeReset', root2);
+    if(btThemeReset) btThemeReset.addEventListener('click', async function(){
       const ok = await confirmDialog({ title:'テーマを初期化', body:'/System/theme.json を既定値に戻します。', okLabel:'リセット' });
-      if(ok){ await Theme.reset(); showToast({ title:'初期化しました', icon:'🎨', type:'success' }); draw(); refreshFilesViews(); }
+      if(ok){ await Theme.reset(); showToast({ title:'初期化しました', icon:'🎨', type:'success' }); renderBody(); refreshFilesViews(); }
     });
-    qs('#btOpenFs', root).addEventListener('click', function(){ openInFiles('/'); });
-    qs('#btExport', root).addEventListener('click', exportBackup);
-    qs('#btImport', root).addEventListener('click', function(){ $('fi-restore').click(); });
-    qs('#btUpd', root).addEventListener('click', function(){ runUpdateCheck(root); });
-    qs('#btUefi', root).addEventListener('click', openSetupFromOS);
-    qs('#btReset', root).addEventListener('click', requestFactoryReset);
-    renderPerms(root);
+    const btSetPass = qs('#btSetPass', root2);
+    if(btSetPass) btSetPass.addEventListener('click', async function(){
+      const v = await promptDialog({
+        title: Account.hasPassword() ? 'パスワードを変更' : 'ログインパスワードを設定',
+        body:'次回起動時から、このパスワードでログインします。空欄で保存すると解除されます。\n忘れた場合、UEFI から「OSデータを初期化」するまでログインできません。',
+        label:'パスワード', value:''
+      });
+      if(v === null) return;
+      await Account.setPassword(v || null);
+      showToast({ title: v ? 'パスワードを設定しました' : '解除しました', icon: v ? '🔒' : '🔓', type:'success' });
+      renderBody();
+    });
+    const btNetUefi = qs('#btNetUefi', root2); if(btNetUefi) btNetUefi.addEventListener('click', openSetupFromOS);
+    const btNewScreen = qs('#btNewScreen', root2); if(btNewScreen) btNewScreen.addEventListener('click', openSecondScreenFlow);
+    const btScreenPerm = qs('#btScreenPerm', root2);
+    if(btScreenPerm) btScreenPerm.addEventListener('click', async function(){
+      const r = await MultiScreen.requestScreenManagement();
+      if(r.ok) showToast({ title:'許可しました', body:'検出した画面数: ' + r.screenCount, icon:'🖥', type:'success' });
+      else if(r.reason === 'unsupported') showToast({ title:'このブラウザには対応していません', type:'warn' });
+      else showToast({ title:'許可されませんでした', body:String(r.reason || ''), type:'error' });
+    });
+    const btOpenFs = qs('#btOpenFs', root2); if(btOpenFs) btOpenFs.addEventListener('click', function(){ openInFiles('/'); });
+    const btExport = qs('#btExport', root2); if(btExport) btExport.addEventListener('click', exportBackup);
+    const btImport = qs('#btImport', root2); if(btImport) btImport.addEventListener('click', function(){ $('fi-restore').click(); });
+    const btUpd = qs('#btUpd', root2); if(btUpd) btUpd.addEventListener('click', function(){ runUpdateCheck(root2); });
+    const btUefi = qs('#btUefi', root2); if(btUefi) btUefi.addEventListener('click', openSetupFromOS);
+    const btReset = qs('#btReset', root2); if(btReset) btReset.addEventListener('click', requestFactoryReset);
+    renderPerms(root2);
   }
   function bindSeg(sel, cur, cb){
     const el = qs(sel, root); if(!el) return;
@@ -4486,7 +4749,7 @@ SYS_RENDER.settings = async function(root, win){
       cb(nv);
     });
   }
-  draw();
+  shell();
 };
 function renderPerms(root){
   const el = qs('#pmList', root);
@@ -5131,6 +5394,20 @@ const UEFI = (function(){
         showToast({ title:'NVRAM をリセットしました', icon:'⚡', type:'warn' });
         render();
       }});
+      /* Reachable independent of whether the OS itself can boot: POST
+         mounts the VFS before the boot loader runs (see bootPost),
+         so this works even to recover a machine whose OS crashes on
+         every boot attempt. */
+      out.push({ type:'action', label:'OSデータを初期化（アプリ・ファイル・設定をすべて削除）', danger:true, run:async function(){
+        const ok1 = await confirmDialog({ title:'OSデータを初期化しますか？', body:'ファイルシステム全体を削除します。インストール済みのアプリ、保存データ、設定がすべて失われます。\nファームウェア設定（このNVRAM）には影響しません。', okLabel:'続行', danger:true });
+        if(!ok1) return;
+        const ok2 = await confirmDialog({ title:'本当に実行しますか？', body:'この操作は取り消せません。', okLabel:'初期化する', danger:true });
+        if(!ok2) return;
+        const keys = await Store.list(FS_PREFIX);
+        for(let i = 0; i < keys.length; i++) await Store.del(keys[i]);
+        showToast({ title:'OSデータを初期化しました', body:'再読み込みしています…', icon:'⚠', type:'warn' });
+        setTimeout(function(){ try{ location.reload(); }catch(e){} }, 800);
+      }});
     }
     return out;
   }
@@ -5331,6 +5608,9 @@ function tickClock(){
   const t = $('tb-time'), d = $('tb-date');
   if(t) t.textContent = p(n.getHours()) + ':' + p(n.getMinutes());
   if(d) d.textContent = (n.getMonth() + 1) + '/' + n.getDate();
+  const lt = $('login-time'), ld = $('login-date');
+  if(lt) lt.textContent = p(n.getHours()) + ':' + p(n.getMinutes());
+  if(ld) ld.textContent = n.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' });
 }
 setInterval(tickClock, 10000);
 
@@ -5485,6 +5765,7 @@ async function bootOS(){
     await Desktops.load();
     await bootLog('desktops ready — ' + Desktops.all().length + ' space(s)', 'ok');
     await Widgets.load();
+    await Account.load();
     const nv = NVRAM.get();
     await bootLog('resources: ' + nv.memory.sizeMB + 'MB / ' + nv.cpu.cores + ' cores / secureboot ' + (nv.secureBoot.enabled ? 'on' : 'off'), 'ok');
     await bootLog('window manager online', 'ok');
@@ -5507,9 +5788,14 @@ async function bootOS(){
   }
 }
 function finish(){
-  if(Boot.isSafe()) $('safe-banner').classList.remove('hidden');
   $('boot').classList.add('done');
   setTimeout(function(){ $('boot').style.display = 'none'; }, 460);
+  /* A login screen a Shift key bypasses isn't a login screen -- safe
+     mode still has to pass through it when a password is set. */
+  if(Account.hasPassword()) showLoginScreen(enterDesktop); else enterDesktop();
+}
+function enterDesktop(){
+  if(Boot.isSafe()) $('safe-banner').classList.remove('hidden');
   $('shell').classList.add('on');
   renderDesktop();
   WM.renderTasks();
@@ -5521,6 +5807,38 @@ function finish(){
   }
   if(MultiScreen.isSecondary) document.title = OS_NAME + ' — 第2画面';
   runAutostart();
+}
+function showLoginScreen(onSuccess){
+  const el = $('login'), form = $('login-form'), input = $('login-pass'), err = $('login-err');
+  const wp = WALLPAPERS.find(function(w){ return w.id === Config.get().wallpaper; }) || WALLPAPERS[0];
+  $('login-bg').style.background = wp.css;
+  $('login-name').textContent = (NVRAM.get().system.hostname || 'nebula');
+  tickClock();
+  input.value = '';
+  err.textContent = '';
+  el.classList.remove('hidden');
+  requestAnimationFrame(function(){ el.classList.add('on'); });
+  setTimeout(function(){ try{ input.focus(); }catch(e){} }, 300);
+  function submit(e){
+    if(e) e.preventDefault();
+    Account.verify(input.value).then(function(ok){
+      if(ok){
+        form.removeEventListener('submit', submit);
+        el.classList.remove('on');
+        setTimeout(function(){ el.classList.add('hidden'); }, 420);
+        onSuccess();
+        return;
+      }
+      err.textContent = 'パスワードが違います';
+      input.value = '';
+      try{ input.focus(); }catch(e2){}
+      const card = el.querySelector('.login-card');
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+    });
+  }
+  form.addEventListener('submit', submit);
 }
 /* Keep every open screen in sync: an app install/uninstall or a config
    change on one screen re-reads the shared VFS-backed storage and
@@ -5567,6 +5885,7 @@ async function recover(safe){
   try{ await Registry.load(); }catch(e){}
   try{ await Desktops.load(); }catch(e){}
   try{ await Widgets.load(); }catch(e){}
+  try{ await Account.load(); }catch(e){}
   finish();
 }
 $('boot-safe').addEventListener('click', function(){ recover(true); });
