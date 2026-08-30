@@ -4607,11 +4607,16 @@ SYS_RENDER.browser = async function(root, win){
       directEmbed(u, false);
     }
   }
+  function proxyBase(c){
+    let v = String(c.browserProxyUrl || '').trim();
+    if(v && !/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v.replace(/\/$/, '');
+  }
   async function checkFramable(u, c){
     try{
       const headers = {};
       if(c.browserProxyKey) headers['X-OS-Auth-Key'] = c.browserProxyKey;
-      const res = await fetch(c.browserProxyUrl.replace(/\/$/, '') + '?check=1&url=' + encodeURIComponent(u), { headers: headers });
+      const res = await fetch(proxyBase(c) + '?check=1&url=' + encodeURIComponent(u), { headers: headers });
       if(!res.ok) return false;
       const data = await res.json();
       return !!data.blocked;
@@ -4636,7 +4641,7 @@ SYS_RENDER.browser = async function(root, win){
     try{
       const headers = {};
       if(c.browserProxyKey) headers['X-OS-Auth-Key'] = c.browserProxyKey;
-      const res = await fetch(c.browserProxyUrl.replace(/\/$/, '') + '?url=' + encodeURIComponent(u), { headers: headers });
+      const res = await fetch(proxyBase(c) + '?url=' + encodeURIComponent(u), { headers: headers });
       if(!res.ok){
         const body = await res.text().catch(function(){ return ''; });
         throw new Error('HTTP ' + res.status + (body ? (': ' + body.slice(0, 140)) : ''));
@@ -4885,10 +4890,17 @@ SYS_RENDER.settings = async function(root, win){
       inProxyUrl.value = c.browserProxyUrl || '';
       qs('#inProxyKey', root2).value = c.browserProxyKey || '';
       qs('#btSaveProxy', root2).addEventListener('click', function(){
+        let proxyUrl = qs('#inProxyUrl', root2).value.trim();
+        /* A bare "worker.example.workers.dev" (no scheme) isn't an
+           absolute URL, so fetch() resolves it relative to this page's
+           own URL instead of failing loudly -- every request then goes
+           to a nonexistent path under this OS's own origin (a 404 no
+           one would think to connect back to the proxy field). */
+        if(proxyUrl && !/^https?:\/\//i.test(proxyUrl)) proxyUrl = 'https://' + proxyUrl;
         Config.update({
-          browserProxyUrl: qs('#inProxyUrl', root2).value.trim(),
+          browserProxyUrl: proxyUrl,
           browserProxyKey: qs('#inProxyKey', root2).value.trim()
-        }).then(function(){ showToast({ title:'保存しました', icon:'📶', type:'success' }); });
+        }).then(function(){ renderBody(); showToast({ title:'保存しました', icon:'📶', type:'success' }); });
       });
     }
     const btNewScreen = qs('#btNewScreen', root2); if(btNewScreen) btNewScreen.addEventListener('click', openSecondScreenFlow);
