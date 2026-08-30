@@ -210,6 +210,14 @@ body{
 .tb-btn:hover{ background:var(--void-2); color:var(--ink-0); }
 #tb-clock{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-1); letter-spacing:.04em; text-align:right; line-height:1.35; }
 #tb-clock small{ display:block; font-size:9px; color:var(--ink-2); }
+#desktop-switcher{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.desk-dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-2); cursor:pointer; transition:background var(--t-fast), width var(--t-fast), border-radius var(--t-fast); }
+.desk-dot:hover{ background:var(--ink-1); }
+.desk-dot.active{ background:var(--signal); width:16px; border-radius:4px; }
+.desk-add-btn{ width:15px; height:15px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; line-height:1; color:var(--ink-2); background:var(--void-2); cursor:pointer; flex-shrink:0; border:none; }
+.desk-add-btn:hover{ color:var(--ink-0); background:var(--void-3); }
+html[data-mode="mobile"] #desktop-switcher{ display:none; }
+.win.on-other-desktop{ display:none; }
 html[data-mode="mobile"] #tb-tasks{ display:none; }
 
 /* ---------- launcher ---------- */
@@ -377,20 +385,7 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
 .ed-ta{ flex:1; width:100%; background:var(--void-0); border:none; outline:none; resize:none; color:var(--ink-0); font-family:var(--font-mono); font-size:13px; line-height:1.7; padding:14px; user-select:text; -webkit-user-select:text; tab-size:2; }
 .ed-status{ display:flex; gap:14px; padding:6px 13px; border-top:1px solid var(--line); background:var(--void-1); font-family:var(--font-mono); font-size:10px; color:var(--ink-2); flex-shrink:0; }
 
-/* ---------- Store ---------- */
-.dz{ border:2px dashed var(--line-hot); border-radius:var(--r-md); padding:26px 18px; text-align:center; transition:border-color var(--t-fast), background var(--t-fast); margin-bottom:16px; }
-.dz.over{ border-color:var(--signal); background:var(--signal-glow); }
-.dz .ic{ font-size:30px; margin-bottom:9px; }
-.dz p{ font-size:11.5px; color:var(--ink-2); line-height:1.7; margin:0 0 13px; }
-.acard{ display:flex; gap:13px; background:var(--void-1); border:1px solid var(--line); border-radius:var(--r-md); padding:13px; margin-bottom:9px; }
-.acard.rowish{ align-items:center; }
-.acard .glyph{ width:44px; height:44px; font-size:21px; border-radius:12px; flex-shrink:0; }
-.acard-b{ flex:1; min-width:0; }
-.acard-b h4{ font-size:13px; margin:0 0 3px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
-.acard-b p{ font-size:11.5px; color:var(--ink-2); margin:0; line-height:1.6; }
-.acard-m{ font-family:var(--font-mono); font-size:10px; color:var(--ink-2); margin-top:5px; }
-.acard-a{ display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
-.acard .btn{ flex-shrink:0; }
+/* ---------- Store (iOS App Store 風 + Apple Watch グリッド) ---------- */
 .code-b{ background:var(--void-0); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 13px; font-family:var(--font-mono); font-size:10.5px; line-height:1.75; color:var(--ink-1); white-space:pre-wrap; word-break:break-word; overflow-x:auto; user-select:text; -webkit-user-select:text; }
 .refresh-b{ width:26px; height:26px; border-radius:var(--r-xs); border:1px solid var(--line); background:var(--void-2); color:var(--ink-1); cursor:pointer; font-size:13px; }
 .refresh-b.spin{ animation:spin .8s linear infinite; }
@@ -403,6 +398,78 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
 .upd-line.ok{ color:var(--good); }
 .upd-line.err{ color:var(--alert); }
 .upd-note{ font-size:11px; color:var(--ink-2); line-height:1.6; margin-top:4px; }
+
+.store-heading{ font-size:26px; font-weight:800; letter-spacing:-.01em; margin:0 0 2px; }
+.store-search-bar{
+  display:flex; align-items:center; gap:7px; background:var(--void-2); border:1.5px solid transparent;
+  border-radius:var(--r-full); padding:9px 14px; margin:14px 0 6px;
+  transition:background var(--t-fast), border-color var(--t-fast);
+}
+.store-search-bar.focused{ background:var(--void-1); border-color:var(--signal); }
+.store-search-ic{ font-size:14px; color:var(--ink-2); flex-shrink:0; }
+.store-search-input{ flex:1; min-width:0; background:none; border:none; outline:none; font-size:15px; color:var(--ink-0); font-family:var(--font-ui); }
+.store-search-input::placeholder{ color:var(--ink-2); }
+.store-search-clear{ width:20px; height:20px; border-radius:50%; background:var(--ink-2); color:var(--void-0); font-size:10.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.75; transition:opacity var(--t-fast); }
+.store-search-clear:hover{ opacity:1; }
+
+.store-dz{ border:1.5px dashed var(--line-hot); border-radius:var(--r-lg); padding:26px 18px; text-align:center; margin:18px 0 26px; transition:border-color var(--t-fast), background var(--t-fast); }
+.store-dz.over{ border-color:var(--signal); background:var(--signal-glow); }
+.store-dz .ic{ font-size:28px; margin-bottom:9px; }
+.store-dz p{ font-size:11.5px; color:var(--ink-2); line-height:1.7; margin:0 0 13px; }
+
+.store-section-title{ font-size:18px; font-weight:800; letter-spacing:-.005em; margin:26px 2px 8px; }
+.store-section-title:first-child{ margin-top:0; }
+.store-section-row{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:26px 2px 8px; }
+.store-section-row .store-section-title{ margin:0; }
+
+.store-row{ display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid var(--line); }
+.store-row:last-child{ border-bottom:none; }
+.store-icon{
+  width:52px; height:52px; border-radius:var(--r-lg); display:flex; align-items:center; justify-content:center;
+  font-size:23px; flex-shrink:0; box-shadow:var(--sh-1), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -10px 14px rgba(0,0,0,.14);
+  border:1px solid rgba(0,0,0,.25);
+}
+.store-icon.sys{ background:linear-gradient(160deg,var(--void-3),var(--void-2)) !important; border-color:var(--line-hot); color:var(--signal); }
+.store-row-body{ flex:1; min-width:0; }
+.store-row-body h4{ font-size:14.5px; font-weight:700; display:flex; align-items:baseline; gap:6px; margin:0; }
+.store-row-body .store-ver{ font-size:10px; font-weight:600; color:var(--ink-2); font-family:var(--font-mono); }
+.store-row-body p{ font-size:12px; color:var(--ink-1); margin:2px 0 0; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.store-row-meta{ font-size:10.5px; color:var(--ink-2); margin-top:4px; font-family:var(--font-mono); }
+.store-row-actions{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.store-pill{
+  font-size:12.5px; font-weight:700; padding:7px 18px; border-radius:var(--r-full);
+  background:var(--void-3); color:var(--signal); border:1px solid var(--line-hot);
+  transition:filter var(--t-fast), transform var(--t-fast); cursor:pointer;
+}
+.store-pill:hover{ filter:brightness(1.15); }
+.store-pill:active{ transform:scale(.94); }
+.store-pill.get{ background:var(--signal); color:var(--void-0); border-color:transparent; }
+.store-row-more{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:15px; background:transparent; flex-shrink:0; cursor:pointer; border:none; }
+.store-row-more:hover{ background:var(--void-3); color:var(--ink-0); }
+.store-dev-card{ display:flex; align-items:center; gap:12px; }
+
+/* ---------- Apple Watch 風グリッド ---------- */
+.watch-grid-section{ margin:0 0 26px; }
+.watch-grid-wrap{ display:flex; justify-content:center; padding:16px 0 6px; }
+.watch-grid{
+  position:relative; width:min(360px,86vw); aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle at 50% 40%, var(--void-2), var(--void-0) 78%);
+  border:1px solid var(--line-hot); box-shadow:var(--sh-2), inset 0 0 46px rgba(0,0,0,.5);
+}
+.watch-cell{
+  position:absolute; display:flex; align-items:center; justify-content:center; border-radius:50%;
+  border:1px solid rgba(0,0,0,.25); box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.16);
+  cursor:pointer; padding:0; transition:transform .12s var(--ease), opacity var(--t-fast); will-change:transform;
+}
+.watch-cell:active{ transform:scale(.9) !important; }
+.watch-cell.dim{ opacity:.42; }
+.watch-cell .wc-ic{ line-height:1; pointer-events:none; }
+.watch-cell .wc-badge{
+  position:absolute; right:-2px; bottom:-2px; width:38%; height:38%; min-width:15px; min-height:15px;
+  border-radius:50%; background:var(--signal); color:var(--void-0); display:flex; align-items:center; justify-content:center;
+  font-size:9.5px; font-weight:800; border:2px solid var(--void-0); pointer-events:none;
+}
+.watch-grid-hint{ text-align:center; font-size:10.5px; color:var(--ink-2); margin-top:2px; }
 
 /* ---------- swatches ---------- */
 .sw-row{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
@@ -442,6 +509,7 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
   <div id="desk-layer">
     <div id="wallpaper"></div>
     <div id="desk"></div>
+    <div id="widget-layer"></div>
     <div id="win-layer"><div id="snap-ghost"></div></div>
   </div>
 
@@ -453,7 +521,9 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
       </svg>
     </div>
     <div id="tb-tasks"></div>
+    <div id="desktop-switcher"></div>
     <div id="tb-right">
+      <button class="tb-btn hidden" id="tb-widgets" title="ウィジェット">▦</button>
       <button class="tb-btn" id="tb-files" title="ファイル">🗂</button>
       <button class="tb-btn" id="tb-term" title="ターミナル">▶_</button>
       <button class="tb-btn" id="tb-settings" title="設定">⚙</button>
@@ -466,6 +536,17 @@ html[data-mode="mobile"] .fx-c3, html[data-mode="mobile"] .fx-c4{ display:none; 
     <div id="lch-grab"></div>
     <input class="input" id="lch-search" type="text" placeholder="アプリを検索…" autocomplete="off">
     <div id="lch-grid"></div>
+  </div>
+
+  <div id="widget-panel" class="hidden">
+    <div id="widget-panel-head">
+      <span>ウィジェット</span>
+      <div id="widget-panel-acts">
+        <button id="wpAddBtn" title="ウィジェットを追加">＋</button>
+        <button id="wpCloseBtn" title="閉じる">✕</button>
+      </div>
+    </div>
+    <div id="widget-panel-body"></div>
   </div>
 </div>
 
@@ -620,7 +701,11 @@ const OS_NAME = 'Nebula 5 Gate';
 const OS_VERSION = '5.0.0';
 const OS_CODENAME = 'GATE';
 const CATALOG_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOSappstore/main/catalog.json';
-const OS_SOURCE_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOSappstore/main/Nebula5Gate.html';
+/* Points at this OS's own repo, not the app-store repo -- the update
+   checker compares OS_VERSION against whatever main currently ships,
+   which is only ever true of GUIOS itself. The old URL 404'd, so the
+   "check for update" button in Settings could never find a version. */
+const OS_SOURCE_URL = 'https://raw.githubusercontent.com/prak59459-create/GUIOS/main/index.html';
 
 /* ---------------- utils ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -675,6 +760,64 @@ function shade(hex, pct){
   return '#' + ((1 << 24) + (c(r) << 16) + (c(g) << 8) + c(b)).toString(16).slice(1);
 }
 function isHexColor(v){ return /^#[0-9a-fA-F]{3,8}$/.test(String(v || '')); }
+
+/* ---------------- multi-monitor / second screen ----------------
+   A browser page can't literally span two physical displays, so "two
+   screens" here means: open a second top-level window running this same
+   page, and keep the two in sync over BroadcastChannel (same VFS-backed
+   storage, same installed apps, same config -- but each screen keeps its
+   own independent set of open app windows and virtual desktops, exactly
+   like two real monitors each showing their own workspace). When the
+   experimental Window Management API is available and already permitted,
+   the new window is placed directly on the other physical display;
+   otherwise it opens as a normal window the person can drag over
+   themselves. */
+const MultiScreen = (function(){
+  const CHANNEL = 'n5-sync-v1';
+  let channel = null;
+  try{ channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null; }catch(e){ channel = null; }
+
+  let isSecondary = false;
+  try{ isSecondary = new URLSearchParams(location.search).get('screen') === '2'; }catch(e){}
+
+  function broadcast(type){
+    if(!channel) return;
+    try{ channel.postMessage({ type: type }); }catch(e){}
+  }
+  function onMessage(handler){
+    if(!channel) return;
+    channel.addEventListener('message', function(e){ if(e && e.data && e.data.type) handler(e.data.type); });
+  }
+
+  async function openSecondScreen(){
+    const url = location.origin + location.pathname + '?screen=2';
+    /* getScreenDetails() itself triggers a permission prompt the first
+       time it's called, which would stall this click handler waiting on
+       the person to answer it. So only ever call it when the permission
+       was already granted in an earlier visit; every other case (never
+       asked, denied, or the API missing entirely) falls straight through
+       to a plain window.open() the person can drag to the other monitor
+       by hand. */
+    try{
+      if('getScreenDetails' in window && navigator.permissions && navigator.permissions.query){
+        const status = await navigator.permissions.query({ name: 'window-management' });
+        if(status.state === 'granted'){
+          const details = await window.getScreenDetails();
+          const other = details.screens.find(function(s){ return s !== details.currentScreen; });
+          if(other){
+            window.open(url, 'n5-secondary',
+              'left=' + other.availLeft + ',top=' + other.availTop + ',width=' + other.availWidth + ',height=' + other.availHeight);
+            return 'placed';
+          }
+        }
+      }
+    }catch(e){ /* API unsupported, or this browser doesn't recognize the permission name */ }
+    const w = window.open(url, 'n5-secondary');
+    return w ? 'opened' : 'blocked';
+  }
+
+  return { isSecondary: isSecondary, hasChannel: !!channel, openSecondScreen: openSecondScreen, broadcast: broadcast, onMessage: onMessage };
+})();
 
 /* ---------------- tiered storage backend ----------------
    window.storage (host-provided) → localStorage → in-memory.
@@ -997,7 +1140,8 @@ const DEFAULT_CONFIG = {
   doubleClickToOpen: false,
   confirmDelete: true,
   showHiddenFiles: false,
-  terminalGreeting: true
+  terminalGreeting: true,
+  widgetLayoutMode: 'panel'
 };
 const DEFAULT_THEME = {
   name: 'Void',
@@ -1117,6 +1261,7 @@ const Config = (function(){
     data = Object.assign({}, data, patch || {});
     if(!Boot.isSafe()) await VFS.writeJSON('/System/config.json', data);
     apply();
+    MultiScreen.broadcast('config-changed');
     return data;
   }
   /* Re-reads config.json from disk. Called by the Files app and the
@@ -1248,6 +1393,7 @@ const Permissions = (function(){
   return { load, ensure, state, set, listFor, all, clearApp };
 })();
 
+const WIDGET_SIZES = ['small', 'medium', 'large'];
 /* ---------------- app registry (backed by /System/registry.json + /Applications) ----------------
    The registry file is an index, not the source of truth for code:
    an app's HTML lives at /Applications/<id>.app/main.html where the
@@ -1287,7 +1433,7 @@ const Registry = (function(){
     if(pruned.length) await save();
     return { count: index.length, pruned };
   }
-  async function save(){ await VFS.writeJSON('/System/registry.json', index); }
+  async function save(){ await VFS.writeJSON('/System/registry.json', index); MultiScreen.broadcast('apps-changed'); }
 
   function listUser(){ return index.slice(); }
   function listAll(){
@@ -1322,6 +1468,11 @@ const Registry = (function(){
     over = over || {};
     const p = parseManifest(html) || {};
     const now = Date.now();
+    let widget = (prev && prev.widget) || null;
+    if(p.widget && typeof p.widget === 'object'){
+      const sizes = Array.isArray(p.widget.sizes) ? p.widget.sizes.filter(function(s){ return WIDGET_SIZES.indexOf(s) !== -1; }) : [];
+      widget = { sizes: sizes.length ? sizes.slice(0, 3) : ['small', 'medium'] };
+    }
     return {
       id: id,
       name: String(over.name || p.name || (prev && prev.name) || id).slice(0, 40),
@@ -1332,7 +1483,12 @@ const Registry = (function(){
       desc: String(over.desc || over.description || p.description || (prev && prev.desc) || '').slice(0, 140),
       installedAt: prev ? prev.installedAt : now,
       updatedAt: prev ? now : undefined,
-      size: bytesOf(html)
+      size: bytesOf(html),
+      /* Any app can opt into being usable as a widget by declaring a
+         "widget" block in its manifest -- the OS then renders its own
+         main.html a second time, smaller and without window chrome,
+         inside the widget layer/panel. No separate widget file format. */
+      widget: widget
     };
   }
 
@@ -1480,7 +1636,31 @@ function showContextMenu(x, y, items){
 }
 function hideContextMenu(){ $('ctx').classList.add('hidden'); }
 document.addEventListener('pointerdown', function(e){ if(!e.target.closest('#ctx')) hideContextMenu(); });
-document.addEventListener('contextmenu', function(e){ if(!e.target.closest('#desk, .tile, .fx-row, .tnode, .acard')) e.preventDefault(); });
+document.addEventListener('contextmenu', function(e){ if(!e.target.closest('#desk, .tile, .fx-row, .tnode, .acard, .titlebar, .task, .desk-dot')) e.preventDefault(); });
+
+/* ---------------- virtual desktop switcher (taskbar) ---------------- */
+function renderDesktopSwitcher(){
+  const el = $('desktop-switcher');
+  if(!el) return;
+  const desks = Desktops.all(), active = Desktops.active();
+  let html = desks.map(function(d){
+    return '<div class="desk-dot' + (d.id === active ? ' active' : '') + '" data-desk="' + d.id + '" title="' + escapeHtml(d.name) + '"></div>';
+  }).join('');
+  if(desks.length < Desktops.MAX) html += '<button class="desk-add-btn" id="deskAddBtn" title="新しいデスクトップを追加">＋</button>';
+  el.innerHTML = html;
+  qsa('.desk-dot', el).forEach(function(dot){
+    dot.addEventListener('click', function(){ Desktops.switchTo(dot.dataset.desk); });
+    dot.addEventListener('contextmenu', function(e){
+      e.preventDefault();
+      if(desks.length <= 1) return;
+      showContextMenu(e.clientX, e.clientY, [
+        { icon:'🗑', label:'このデスクトップを削除', danger:true, onSelect:function(){ Desktops.remove(dot.dataset.desk); } }
+      ]);
+    });
+  });
+  const addBtn = $('deskAddBtn');
+  if(addBtn) addBtn.addEventListener('click', function(){ Desktops.add(); });
+}
 
 function glyphHTML(app, cls){
   const c = isHexColor(app.color) ? app.color : '#6b769a';
@@ -1495,6 +1675,71 @@ function downloadText(text, filename, mime){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
 }
+
+/* ---------------- virtual desktops ----------------
+   Each window belongs to exactly one desktop (see WM.create /
+   syncDesktopVisibility below). Switching desktops never destroys or
+   reloads a window -- it's purely a display:none toggle on .win elements
+   plus which taskbar tasks show, so a running app's iframe (and its
+   state) survives being on a desktop that isn't showing. */
+const Desktops = (function(){
+  const MAX = 6;
+  let list = [{ id: 'desk-1', name: 'デスクトップ 1' }];
+  let activeId = list[0].id;
+  const listeners = [];
+
+  async function load(){
+    const saved = safeJSONParse(await Store.get('n5:desktops'), null);
+    if(saved && Array.isArray(saved.list) && saved.list.length){
+      list = saved.list;
+      activeId = list.some(function(d){ return d.id === saved.activeId; }) ? saved.activeId : list[0].id;
+    }
+  }
+  async function persist(){ await Store.set('n5:desktops', JSON.stringify({ list: list, activeId: activeId })); }
+  function notify(){ listeners.forEach(function(fn){ try{ fn(); }catch(e){} }); }
+  function onChange(fn){ listeners.push(fn); }
+
+  function all(){ return list.slice(); }
+  function active(){ return activeId; }
+  function indexOf(id){ return list.findIndex(function(d){ return d.id === id; }); }
+
+  async function add(){
+    if(list.length >= MAX) return null;
+    const d = { id: uid('desk'), name: 'デスクトップ ' + (list.length + 1) };
+    list.push(d);
+    activeId = d.id;
+    await persist();
+    notify();
+    return d;
+  }
+  async function remove(id){
+    if(list.length <= 1) return false;
+    const idx = indexOf(id);
+    if(idx === -1) return false;
+    list.splice(idx, 1);
+    if(activeId === id) activeId = list[Math.max(0, idx - 1)].id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchTo(id){
+    if(id === activeId || indexOf(id) === -1) return false;
+    activeId = id;
+    await persist();
+    notify();
+    return true;
+  }
+  async function switchByOffset(delta){
+    const idx = indexOf(activeId);
+    if(idx === -1) return false;
+    return switchTo(list[(idx + delta + list.length) % list.length].id);
+  }
+
+  return {
+    MAX: MAX, load: load, all: all, active: active, indexOf: indexOf,
+    add: add, remove: remove, switchTo: switchTo, switchByOffset: switchByOffset, onChange: onChange
+  };
+})();
 
 /* ---------------- window manager ---------------- */
 const WM = (function(){
@@ -1534,6 +1779,10 @@ const WM = (function(){
   }
   function focus(id){
     const w = byId(id); if(!w) return;
+    /* Clicking a taskbar task (or otherwise focusing) a window parked on a
+       different desktop should bring you to it -- otherwise "focus" would
+       silently do nothing visible. */
+    if(w.desktopId && w.desktopId !== Desktops.active()) Desktops.switchTo(w.desktopId);
     z++; w.el.style.zIndex = z;
     if(w.state === 'min'){ w.state = 'normal'; w.el.classList.remove('min'); }
     wins.forEach(function(o){ o.el.classList.toggle('focus', o.id === id); });
@@ -1565,10 +1814,11 @@ const WM = (function(){
       id, appId: o.appId, el, system: !!o.system,
       frame: o.content.tagName === 'IFRAME' ? o.content : null,
       title: o.title || '', icon: o.icon || '', state: 'normal',
-      rect: defaultRect(), pre: null, lastPong: Date.now(), hung: false
+      rect: defaultRect(), pre: null, lastPong: Date.now(), hung: false,
+      desktopId: Desktops.active()
     };
     wins.push(w);
-    applyRect(w); bind(w); focus(id); renderTasks();
+    applyRect(w); bind(w); syncDesktopVisibility(); focus(id); renderTasks();
     return w;
   }
   function close(id){
@@ -1607,6 +1857,25 @@ const WM = (function(){
       if(w.state === 'max') return;
       drag = { w, mode:'move', sx:e.clientX, sy:e.clientY, ox:w.rect.x, oy:w.rect.y };
       try{ tb.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    tb.addEventListener('contextmenu', function(e){
+      if(e.target.closest('[data-a]') || isMobile()) return;
+      e.preventDefault();
+      focus(w.id);
+      const desks = Desktops.all();
+      const items = [];
+      if(desks.length > 1){
+        desks.forEach(function(d){
+          if(d.id === w.desktopId) return;
+          items.push({ icon:'🖥', label:d.name + ' へ移動', onSelect:function(){ moveToDesktop(w.id, d.id); } });
+        });
+        items.push({ sep:true });
+      }
+      items.push({ icon:'⤢', label:w.state === 'max' ? '元のサイズに戻す' : '最大化', onSelect:function(){ toggleMax(w.id); } });
+      items.push({ icon:'⌄', label:'最小化', onSelect:function(){ toggleMin(w.id); } });
+      items.push({ sep:true });
+      items.push({ icon:'✕', label:'閉じる', danger:true, onSelect:function(){ close(w.id); } });
+      showContextMenu(e.clientX, e.clientY, items);
     });
     qsa('.rs', w.el).forEach(function(h){
       h.addEventListener('pointerdown', function(e){
@@ -1656,13 +1925,39 @@ const WM = (function(){
     hideSnapGhost();
     drag = null;
   });
+  /* Half-, quarter- and full-screen targets by zone name -- shared by the
+     live drag-to-edge snap zones below and by zoneRect(), which the
+     Cmd/Ctrl+arrow keyboard shortcuts use, so a keyboard snap always
+     lands exactly where the drag ghost would have shown. */
+  function zoneRect(kind){
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
+    const halfW = Math.round(vw / 2), halfH = Math.round((vh - tbh) / 2);
+    switch(kind){
+      case 'max': return { x:0, y:0, w:vw, h:vh - tbh, kind:kind };
+      case 'left': return { x:0, y:0, w:halfW, h:vh - tbh, kind:kind };
+      case 'right': return { x:vw - halfW, y:0, w:halfW, h:vh - tbh, kind:kind };
+      case 'top-left': return { x:0, y:0, w:halfW, h:halfH, kind:kind };
+      case 'top-right': return { x:vw - halfW, y:0, w:halfW, h:halfH, kind:kind };
+      case 'bottom-left': return { x:0, y:vh - tbh - halfH, w:halfW, h:halfH, kind:kind };
+      case 'bottom-right': return { x:vw - halfW, y:vh - tbh - halfH, w:halfW, h:halfH, kind:kind };
+      default: return null;
+    }
+  }
   function snapZone(x, y){
     if(isMobile()) return null;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
-    if(y < 14) return { x:0, y:0, w:vw, h:vh - tbh, kind:'max' };
-    if(x < 14) return { x:0, y:0, w:Math.round(vw/2), h:vh - tbh, kind:'left' };
-    if(x > vw - 14) return { x:Math.round(vw/2), y:0, w:Math.round(vw/2), h:vh - tbh, kind:'right' };
+    const edge = 14, corner = 70;
+    const nearL = x <= edge, nearR = x >= vw - edge, nearT = y < edge;
+    const cornerL = x <= corner, cornerR = x >= vw - corner;
+    const cornerT = y <= corner, cornerB = y >= vh - corner;
+    if(cornerT && cornerL) return zoneRect('top-left');
+    if(cornerT && cornerR) return zoneRect('top-right');
+    if(cornerB && cornerL) return zoneRect('bottom-left');
+    if(cornerB && cornerR) return zoneRect('bottom-right');
+    if(nearT) return zoneRect('max');
+    if(nearL) return zoneRect('left');
+    if(nearR) return zoneRect('right');
     return null;
   }
   function showSnapGhost(x, y){
@@ -1676,10 +1971,28 @@ const WM = (function(){
   function commitSnap(w, x, y){
     const zn = snapZone(x, y);
     if(!zn) return;
+    applySnapZone(w, zn);
+  }
+  function applySnapZone(w, zn){
     if(zn.kind === 'max'){ w.pre = Object.assign({}, w.rect); w.state = 'max'; applyRect(w); return; }
     w.state = 'normal';
     w.rect = { x:zn.x, y:zn.y, w:zn.w, h:zn.h };
     applyRect(w);
+  }
+  /* Keyboard equivalent of dragging a window to an edge. */
+  function snapFocused(kind){
+    if(isMobile()) return false;
+    const w = focused();
+    /* Dragging a window to an edge already snaps it regardless of whether
+       it's a "system" app (files/terminal/editor are all just windows to
+       the person using them), so the keyboard shortcut shouldn't be more
+       restrictive than the mouse. It must, however, refuse to act on a
+       window sitting on a desktop that isn't currently visible. */
+    if(!w || w.desktopId !== Desktops.active()) return false;
+    const zn = zoneRect(kind);
+    if(!zn) return false;
+    applySnapZone(w, zn);
+    return true;
   }
 
   function relayout(){ wins.forEach(function(w){ applyRect(w); }); }
@@ -1703,7 +2016,8 @@ const WM = (function(){
     if(!bar) return;
     bar.innerHTML = '';
     const f = focused();
-    wins.forEach(function(w){
+    const active = Desktops.active();
+    wins.filter(function(w){ return w.desktopId === active; }).forEach(function(w){
       const meta = Registry.get(w.appId) || {};
       const el = document.createElement('div');
       el.className = 'task' + (f && f.id === w.id ? ' active' : '');
@@ -1723,7 +2037,23 @@ const WM = (function(){
       bar.appendChild(el);
     });
   }
-  return { create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused, relayout, notePong, renderTasks };
+  function syncDesktopVisibility(){
+    const active = Desktops.active();
+    wins.forEach(function(w){ w.el.classList.toggle('on-other-desktop', w.desktopId !== active); });
+    renderTasks();
+  }
+  function moveToDesktop(id, desktopId){
+    const w = byId(id); if(!w || w.desktopId === desktopId) return false;
+    w.desktopId = desktopId;
+    syncDesktopVisibility();
+    return true;
+  }
+  Desktops.onChange(syncDesktopVisibility);
+  Desktops.onChange(renderDesktopSwitcher);
+  return {
+    create, close, closeApp, focus, toggleMin, toggleMax, setTitle, byId, byApp, byFrame, all, focused,
+    relayout, notePong, renderTasks, snapFocused, syncDesktopVisibility, moveToDesktop
+  };
 })();
 </script>
 <script>
@@ -1741,9 +2071,13 @@ function platformInfo(){
   try{ coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches; }catch(e){}
   return { mode: Config.resolveMode(), theme: Config.get().theme, isTouch: coarse, os: OS_NAME, version: OS_VERSION, safeMode: Boot.isSafe() };
 }
-function buildBootstrap(meta){
+function buildBootstrap(meta, opts){
   const info = { id: meta.id, name: meta.name, version: meta.version || '1.0.0' };
-  const plat = platformInfo();
+  /* An app declared widget-capable in its manifest is booted from this
+     same function a second time, smaller and chromeless -- it tells
+     itself apart purely via PLATFORM.surface / widgetSize, so a single
+     main.html can freely serve as both the full app and its widget. */
+  const plat = Object.assign(platformInfo(), { surface: (opts && opts.surface) || 'window', widgetSize: (opts && opts.size) || null });
   return '<script>\n(function(){\n' +
 '  var APP = ' + JSON.stringify(info) + ';\n' +
 '  var PLATFORM = ' + JSON.stringify(plat) + ';\n' +
@@ -1856,8 +2190,13 @@ window.addEventListener('message', async function(e){
   if(d.__pong__ === true){ const pw = WM.byFrame(e.source); if(pw) WM.notePong(pw.id); return; }
   if(typeof d.reqId === 'undefined') return;
   const win = WM.byFrame(e.source);
-  if(!win) return;
-  const appId = win.appId;
+  /* A widget-mode iframe isn't a WM window, but it runs the same app
+     code and deserves the same fs/kv/notify/openApp access, scoped to
+     the same appId -- only the window-chrome actions below are no-ops
+     for it. */
+  const widgetAppId = win ? null : Widgets.ownerOf(e.source);
+  if(!win && !widgetAppId) return;
+  const appId = win ? win.appId : widgetAppId;
   if(rateLimited(appId)) return;
   function reply(result, error){
     try{ e.source.postMessage({ n5:true, reqId:d.reqId, result:result, error:error }, '*'); }catch(err){}
@@ -1916,10 +2255,10 @@ window.addEventListener('message', async function(e){
       showToast({ title:(m.name || appId), body:String(pl.message || ''), icon:(m.icon || '🔔'), type:(pl.opts && pl.opts.type) || 'info' });
       reply(true);
     } else if(a === 'setTitle'){
-      WM.setTitle(win.id, String(pl.title || win.title));
+      if(win) WM.setTitle(win.id, String(pl.title || win.title));
       reply(true);
-    } else if(a === 'close'){ WM.close(win.id); reply(true); }
-    else if(a === 'minimize'){ WM.toggleMin(win.id); reply(true); }
+    } else if(a === 'close'){ if(win) WM.close(win.id); reply(true); }
+    else if(a === 'minimize'){ if(win) WM.toggleMin(win.id); reply(true); }
     else if(a === 'openApp'){
       if(!(await Permissions.ensure(appId, 'openApp'))){ reply(null, 'permission denied: openApp'); return; }
       await launchApp(String(pl.id || '')); reply(true);
@@ -3130,65 +3469,166 @@ const Catalog = (function(){
 })();
 
 let _storeRoot = null;
-function refreshStore(){ if(_storeRoot && document.body.contains(_storeRoot)) SYS_RENDER.store(_storeRoot, WM.byApp('store')); }
+let _storeQuery = '';
+function refreshStore(){ if(_storeRoot && document.body.contains(_storeRoot)) renderStoreBody(_storeRoot, _storeQuery); }
+
+/* Single source of truth for "what apps exist, matching this filter" --
+   shared by the installed list, the remote-catalog-aware search results
+   and the Apple Watch style honeycomb grid, so the three views can never
+   disagree about what's installed vs. what's still available. */
+function storeAppGroups(filter){
+  const f = (filter || '').toLowerCase();
+  const matchName = function(n){ return !f || (n || '').toLowerCase().indexOf(f) !== -1; };
+  const installedAll = Registry.listAll().filter(function(a){ return matchName(a.name); });
+  const st = Catalog.state();
+  const remote = st.items.filter(function(e){ return !Registry.isInstalled(e.id) && matchName(e.name); });
+  return { installedAll: installedAll, remote: remote, catalogState: st };
+}
+function buildGridEntries(groups){
+  return [].concat(
+    groups.installedAll.map(function(a){ return { app: a, installed: true }; }),
+    groups.remote.map(function(a){ return { app: a, installed: false }; })
+  );
+}
 
 SYS_RENDER.store = async function(root, win){
   _storeRoot = root;
+  _storeQuery = '';
   root.innerHTML =
     '<div class="page">' +
-      '<h2>◈ ストア</h2><p class="sub">HTMLファイル1枚がそのままアプリになります</p>' +
-      '<div id="stUpd"></div>' +
-      '<div class="dz" id="stDz"><div class="ic">◈</div>' +
-        '<p>HTML ファイルをドラッグ&ドロップ、またはボタンから選択</p>' +
-        '<button class="btn" id="stPick">ファイルから追加</button></div>' +
-      '<div class="sect">インストール済み</div><div id="stList"></div>' +
-      '<div class="title-row"><span>🌐 リモートカタログ</span><button class="refresh-b" id="stRef" title="再読み込み">⟳</button></div>' +
-      '<div id="stRemote"><div class="empty-h">読み込み中…</div></div>' +
-      '<div class="sect">開発者向け</div>' +
-      '<div class="card"><div class="hint" style="margin-bottom:10px;">アプリの先頭に次のコメントを置くと、名前やアイコンが自動で読み込まれます。</div>' +
-      '<div class="code-b" id="stSdk"></div>' +
-      '<button class="btn ghost block" id="stTpl" style="margin-top:12px;">ひな形をダウンロード</button></div>' +
+      '<h2 class="store-heading">App Store</h2>' +
+      '<div class="store-search-bar" id="storeSearchBar">' +
+        '<span class="store-search-ic">🔍</span>' +
+        '<input class="store-search-input" id="storeSearch" type="text" inputmode="search" placeholder="App を検索" autocomplete="off" autocorrect="off" spellcheck="false">' +
+        '<button class="store-search-clear hidden" id="storeSearchClear" aria-label="クリア">✕</button>' +
+      '</div>' +
+      '<div id="storeBody"></div>' +
     '</div>';
 
-  qs('#stSdk', root).textContent = SDK_TEXT;
-  qs('#stPick', root).addEventListener('click', function(){ $('fi-install').click(); });
-  qs('#stTpl', root).addEventListener('click', function(){
+  const input = qs('#storeSearch', root);
+  const clearBtn = qs('#storeSearchClear', root);
+  const bar = qs('#storeSearchBar', root);
+  const doFilter = debounce(function(v){ _storeQuery = v; renderStoreBody(root, v); }, 120);
+  input.addEventListener('input', function(e){
+    clearBtn.classList.toggle('hidden', !e.target.value);
+    doFilter(e.target.value);
+  });
+  input.addEventListener('focus', function(){ bar.classList.add('focused'); });
+  input.addEventListener('blur', function(){ bar.classList.remove('focused'); });
+  clearBtn.addEventListener('click', function(){
+    input.value = ''; clearBtn.classList.add('hidden'); _storeQuery = '';
+    renderStoreBody(root, '');
+    input.focus();
+  });
+
+  renderStoreBody(root, '');
+  // remote catalog loads async; if the person is already mid-search when it
+  // resolves, re-run the search so remote matches appear without a retype
+  Catalog.fetch().then(function(){
+    if(document.body.contains(root) && _storeQuery) renderStoreBody(root, _storeQuery);
+  });
+};
+
+function renderStoreBody(root, filter){
+  const body = qs('#storeBody', root);
+  if(!body) return;
+  const f = (filter || '').trim();
+  if(f) renderStoreSearchResults(root, body, f);
+  else renderStoreBrowse(root, body);
+}
+
+function renderStoreBrowse(root, body){
+  body.innerHTML =
+    '<div class="watch-grid-section" id="storeWatchGridSection">' +
+      '<div class="store-section-title">グリッド</div>' +
+      '<div class="watch-grid-wrap"><div class="watch-grid" id="storeWatchGrid"></div></div>' +
+      '<div class="watch-grid-hint">タップで開く・追加できます</div>' +
+    '</div>' +
+    '<div id="stUpd"></div>' +
+    '<div class="store-dz" id="stDz"><div class="ic">◈</div>' +
+      '<p>HTML ファイルをドラッグ&ドロップ、またはボタンから選択</p>' +
+      '<button class="btn secondary" id="stPick">ファイルから追加</button></div>' +
+    '<div id="stList"></div>' +
+    '<div class="store-section-row"><span class="store-section-title">🌐 リモートカタログ</span><button class="refresh-b" id="stRef" title="再読み込み">⟳</button></div>' +
+    '<div id="stRemote"><div class="empty-h">読み込み中…</div></div>' +
+    '<div class="store-section-title">開発者向け</div>' +
+    '<div class="card store-dev-card">' +
+      '<div style="flex:1"><b style="font-size:12.5px">アプリのひな形をダウンロード</b>' +
+      '<div style="font-size:11.5px;color:var(--ink-2);margin-top:3px;">SDKの使用例つき。編集してこのストアに追加できます。</div></div>' +
+      '<button class="btn ghost sm" id="stTpl">取得</button></div>' +
+    '<div class="card" style="margin-top:10px;"><b style="font-size:12.5px;">SDK クイックリファレンス</b><div class="code-b" id="stSdk" style="margin-top:8px;"></div></div>';
+
+  qs('#stSdk', body).textContent = SDK_TEXT;
+  qs('#stPick', body).addEventListener('click', function(){ $('fi-install').click(); });
+  qs('#stTpl', body).addEventListener('click', function(){
     downloadText(APP_TEMPLATE, 'my-app.html', 'text/html');
     showToast({ title:'ダウンロードしました', body:'my-app.html を編集して追加してください', icon:'⬇' });
   });
-  const dz = qs('#stDz', root);
+  const dz = qs('#stDz', body);
   ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.add('over'); }); });
   ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.remove('over'); }); });
   dz.addEventListener('drop', function(e){
     const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if(f) handleInstallFile(f);
   });
-  qs('#stRef', root).addEventListener('click', function(){ renderRemote(root, true); });
+  qs('#stRef', body).addEventListener('click', function(){ renderRemote(root, true); });
 
   renderInstalled(root);
   renderRemote(root);
-};
+}
+
+/* kind: 'installed' (includes system apps) | 'remote' (from catalog.json) */
+function storeCardHTML(meta, kind){
+  const id = escapeHtml(meta.id), name = escapeHtml(meta.name), desc = escapeHtml(meta.desc || meta.description || '');
+  const isInstalled = kind === 'installed';
+  const actionBtn = isInstalled
+    ? '<button class="store-pill" data-store-act="open" data-app-id="' + id + '">開く</button>'
+    : '<button class="store-pill get" data-remote-install="' + id + '">入手</button>';
+  const metaLine = isInstalled
+    ? (meta.system ? 'システム' : '追加アプリ・' + fmtBytes(Registry.sizeOf(meta.id) || 0))
+    : ('作者: ' + escapeHtml(meta.author || '不明'));
+  const more = isInstalled
+    ? '<button class="store-row-more" data-store-act="more" data-app-id="' + id + '" aria-label="その他">⋯</button>'
+    : '';
+  return '<div class="store-row">' + glyphHTML(meta, 'store-icon') +
+    '<div class="store-row-body"><h4>' + name + '<span class="store-ver">v' + escapeHtml(meta.version || '1.0.0') + '</span></h4>' +
+    '<p>' + desc + '</p>' +
+    '<div class="store-row-meta">' + metaLine + '</div></div>' +
+    '<div class="store-row-actions">' + actionBtn + more + '</div></div>';
+}
+
+function wireStoreRowActions(el, root){
+  qsa('[data-store-act]', el).forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      const act = btn.dataset.storeAct, id = btn.dataset.appId;
+      if(act === 'open') launchApp(id);
+      else if(act === 'more') showStoreRowMenu(e, id);
+    });
+  });
+}
+function showStoreRowMenu(e, id){
+  const meta = Registry.get(id);
+  if(!meta) return;
+  const items = [
+    { icon:'✎', label:'ソースを編集', onSelect:function(){ openEditor(Registry.mainPath(id)); } },
+    { icon:'🗄', label:'保存データを開く', onSelect:function(){ openInFiles(Registry.dataDir(id)); } }
+  ];
+  if(!meta.system){
+    items.push({ sep:true });
+    items.push({ icon:'🗑', label:'アンインストール', danger:true, onSelect:function(){ requestUninstall(id); } });
+  }
+  showContextMenu(e.clientX, e.clientY, items);
+}
+
 function renderInstalled(root){
   const el = qs('#stList', root);
   if(!el) return;
   const apps = Registry.listUser();
-  if(!apps.length){ el.innerHTML = '<div class="empty-h">まだアプリがありません。<br>HTMLファイルを追加するとここに表示されます。</div>'; return; }
-  el.innerHTML = apps.map(function(m){
-    return '<div class="acard">' + glyphHTML(m) +
-      '<div class="acard-b"><h4>' + escapeHtml(m.name) + ' <span class="pill">v' + escapeHtml(m.version) + '</span></h4>' +
-      '<p>' + escapeHtml(m.desc || '') + '</p>' +
-      '<div class="acard-m">' + escapeHtml(Registry.appDir(m.id)) + ' · ' + fmtBytes(Registry.sizeOf(m.id)) + '</div>' +
-      '<div class="acard-a">' +
-        '<button class="btn sm" data-open="' + escapeHtml(m.id) + '">開く</button>' +
-        '<button class="btn ghost sm" data-src="' + escapeHtml(m.id) + '">ソース</button>' +
-        '<button class="btn ghost sm" data-data="' + escapeHtml(m.id) + '">データ</button>' +
-        '<button class="btn ghost sm" data-rm="' + escapeHtml(m.id) + '">削除</button>' +
-      '</div></div></div>';
-  }).join('');
-  qsa('[data-open]', el).forEach(function(b){ b.addEventListener('click', function(){ launchApp(b.dataset.open); }); });
-  qsa('[data-src]', el).forEach(function(b){ b.addEventListener('click', function(){ openEditor(Registry.mainPath(b.dataset.src)); }); });
-  qsa('[data-data]', el).forEach(function(b){ b.addEventListener('click', function(){ openInFiles(Registry.dataDir(b.dataset.data)); }); });
-  qsa('[data-rm]', el).forEach(function(b){ b.addEventListener('click', function(){ requestUninstall(b.dataset.rm); }); });
+  let html = '<div class="store-section-title">インストール済み（' + apps.length + '）</div>';
+  if(!apps.length){ html += '<div class="empty-h">まだアプリがありません。<br>HTMLファイルを追加するとここに表示されます。</div>'; }
+  else{ html += apps.map(function(m){ return storeCardHTML(m, 'installed'); }).join(''); }
+  el.innerHTML = html;
+  wireStoreRowActions(el, root);
 }
 async function requestUninstall(id){
   const m = Registry.get(id);
@@ -3213,6 +3653,10 @@ async function renderRemote(root, force){
   const st = await Catalog.fetch(force);
   if(!document.body.contains(root) || !qs('#stRemote', root)) return;
   if(btn) btn.classList.remove('spin');
+  // the grid was built before this fetch resolved (possibly with nothing);
+  // redraw it now that remote items are in
+  renderWatchGrid(root, buildGridEntries(storeAppGroups(_storeQuery)));
+
   if(st.status === 'error'){
     el.innerHTML = '<div class="empty-h">カタログを取得できませんでした<br><span style="font-size:10.5px;opacity:.8;">' + escapeHtml(st.error) + '</span>' +
       '<div style="margin-top:10px;"><button class="btn ghost sm" id="stRetry">再読み込み</button></div></div>';
@@ -3224,19 +3668,49 @@ async function renderRemote(root, force){
   renderUpdates(root, st);
   const avail = st.items.filter(function(e){ return !Registry.isInstalled(e.id); });
   if(!avail.length){ el.innerHTML = '<div class="empty-h">' + (st.items.length ? 'カタログのアプリはすべて追加済みです' : 'カタログにアプリがありません') + '</div>'; return; }
-  el.innerHTML = avail.map(function(e){
-    return '<div class="acard">' + glyphHTML(e) +
-      '<div class="acard-b"><h4>' + escapeHtml(e.name) + ' <span class="pill">v' + escapeHtml(e.version) + '</span></h4>' +
-      '<p>' + escapeHtml(e.desc) + '</p><div class="acard-m">作者: ' + escapeHtml(e.author) + '</div>' +
-      '<div class="acard-a"><button class="btn sm" data-inst="' + escapeHtml(e.id) + '">インストール</button></div></div></div>';
-  }).join('');
-  qsa('[data-inst]', el).forEach(function(b){
+  el.innerHTML = avail.map(function(e){ return storeCardHTML(e, 'remote'); }).join('');
+  qsa('[data-remote-install]', el).forEach(function(b){
     b.addEventListener('click', function(){
-      const e = st.items.find(function(x){ return x.id === b.dataset.inst; });
+      const e = st.items.find(function(x){ return x.id === b.dataset.remoteInstall; });
       if(e) fetchAndInstall(e, root, b);
     });
   });
 }
+
+/* unified live search across installed apps and the remote catalog --
+   mirrors iOS's Search tab: once there's a query, the normal browse
+   sections disappear and only matches (plus the honeycomb grid) show. */
+function renderStoreSearchResults(root, body, filter){
+  const groups = storeAppGroups(filter);
+  const installed = groups.installedAll.filter(function(a){ return !a.system; });
+  const remoteMatches = groups.remote;
+
+  const total = installed.length + remoteMatches.length;
+  let html =
+    '<div class="watch-grid-section" id="storeWatchGridSection">' +
+      '<div class="store-section-title">グリッド</div>' +
+      '<div class="watch-grid-wrap"><div class="watch-grid" id="storeWatchGrid"></div></div>' +
+      '<div class="watch-grid-hint">タップで開く・追加できます</div>' +
+    '</div>' +
+    '<div class="store-section-title">検索結果' + (total ? '（' + total + '）' : '') + '</div>';
+  if(!total){
+    html += '<div class="empty-h">「' + escapeHtml(filter) + '」に一致するAppが見つかりません' +
+      (groups.catalogState.status === 'loading' ? '<br><span style="font-size:10.5px;opacity:.75;">リモートカタログを確認中…</span>' : '') + '</div>';
+  } else {
+    installed.forEach(function(a){ html += storeCardHTML(a, 'installed'); });
+    remoteMatches.forEach(function(e){ html += storeCardHTML(e, 'remote'); });
+  }
+  body.innerHTML = html;
+  wireStoreRowActions(body, root);
+  qsa('[data-remote-install]', body).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const entry = remoteMatches.find(function(e){ return e.id === btn.dataset.remoteInstall; });
+      if(entry) fetchAndInstall(entry, root, btn);
+    });
+  });
+  renderWatchGrid(root, buildGridEntries(groups));
+}
+
 async function fetchAndInstall(entry, root, btn){
   if(btn){ btn.disabled = true; btn.textContent = '取得中…'; }
   try{
@@ -3244,7 +3718,7 @@ async function fetchAndInstall(entry, root, btn){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const code = await r.text();
     if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
-    beginInstall(code, entry, { source:'リモートカタログ', onDone:function(){ renderRemote(root); } });
+    beginInstall(code, entry, { source:'リモートカタログ', onDone:function(){ refreshStore(); } });
   }catch(err){
     showToast({ title:'取得失敗', body:entry.name + ' を取得できませんでした', type:'error' });
     if(btn){ btn.disabled = false; btn.textContent = 'インストール'; }
@@ -3256,16 +3730,16 @@ function renderUpdates(root, st){
   if(st.status !== 'loaded'){ el.innerHTML = ''; return; }
   const ups = st.items.map(function(e){
     const inst = Registry.get(e.id);
-    if(inst && !inst.system && compareVersions(e.version, inst.version) > 0) return { e, from: inst.version };
+    if(inst && !inst.system && compareVersions(e.version, inst.version) > 0) return { e: e, from: inst.version };
     return null;
   }).filter(Boolean);
   if(!ups.length){ el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="title-row"><span>⬆ アップデート (' + ups.length + ')</span></div>' +
+  el.innerHTML = '<div class="store-section-title">⬆ アップデート（' + ups.length + '）</div>' +
     ups.map(function(u){
-      return '<div class="acard rowish">' + glyphHTML(u.e) +
-        '<div class="acard-b"><h4>' + escapeHtml(u.e.name) + '</h4>' +
-        '<div class="acard-m">v' + escapeHtml(u.from) + ' → v' + escapeHtml(u.e.version) + '</div></div>' +
-        '<button class="btn sm" data-up="' + escapeHtml(u.e.id) + '">更新</button></div>';
+      return '<div class="store-row">' + glyphHTML(u.e, 'store-icon') +
+        '<div class="store-row-body"><h4>' + escapeHtml(u.e.name) + '</h4>' +
+        '<div class="store-row-meta">v' + escapeHtml(u.from) + ' → v' + escapeHtml(u.e.version) + '</div></div>' +
+        '<div class="store-row-actions"><button class="store-pill get" data-up="' + escapeHtml(u.e.id) + '">更新</button></div></div>';
     }).join('');
   qsa('[data-up]', el).forEach(function(b){
     b.addEventListener('click', async function(){
@@ -3291,6 +3765,95 @@ function renderUpdates(root, st){
     });
   });
 }
+
+/* ---------------- Apple Watch 風ハニカムグリッド ----------------
+   ホーム画面の円形ハニカムを模したビュー。インストール済み／未インス
+   トールを分けず、システムAppも含めた「全App」を1枚の円に敷き詰め、
+   中心に近いApp（配列の先頭）ほど大きく表示する。未インストールのApp
+   は少し暗くし、右下に + バッジを付けてタップ時にインストール導線へ
+   進むことが分かるようにする。 */
+function watchCellAction(entry, root){
+  const id = entry.app.id;
+  if(entry.installed){ launchApp(id); return; }
+  const remote = Catalog.state().items.find(function(e){ return e.id === id; });
+  if(remote) fetchAndInstall(remote, root, null);
+}
+
+const WATCH_CELL = 0.34;
+const WATCH_ROWH = WATCH_CELL * 0.866;
+function layoutHoneycomb(n){
+  const slots = [];
+  for(let row = -5; row <= 5; row++){
+    const y = row * WATCH_ROWH;
+    if(Math.abs(y) > 1.04) continue;
+    const halfw = Math.sqrt(Math.max(0, 1 - y * y));
+    const cols = Math.max(1, Math.floor((halfw * 2) / WATCH_CELL) + 1);
+    const offset = (((row % 2) + 2) % 2 === 1) ? WATCH_CELL / 2 : 0;
+    const start = -((cols - 1) / 2) * WATCH_CELL + offset;
+    for(let c = 0; c < cols; c++){
+      const x = start + c * WATCH_CELL;
+      if(Math.hypot(x, y) > 1.04) continue;
+      slots.push({ x: x, y: y });
+    }
+  }
+  slots.sort(function(a, b){ return Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y); });
+  return slots.slice(0, n);
+}
+function renderWatchGrid(root, entries){
+  const grid = qs('#storeWatchGrid', root);
+  if(!grid) return;
+  const section = grid.closest('.watch-grid-section');
+  if(!entries.length){ if(section) section.style.display = 'none'; return; }
+  if(section) section.style.display = '';
+
+  grid.innerHTML = '';
+  const slots = layoutHoneycomb(entries.length);
+  const size = grid.clientWidth || 340;
+  const r = size / 2;
+  const cellPitch = WATCH_CELL * r;      // px distance to the nearest neighbour slot
+  const iconMax = cellPitch * 0.9;       // icon diameter at full scale, with a small gap
+  slots.forEach(function(slot, i){
+    const entry = entries[i];
+    if(!entry) return;
+    const app = entry.app;
+    const dist = Math.hypot(slot.x, slot.y);
+    const scale = 1 - dist * 0.42;
+    const diameter = Math.max(20, Math.round(iconMax * scale));
+    const cx = r + slot.x * r - diameter / 2;
+    const cy = r + slot.y * r - diameter / 2;
+    const bg = isHexColor(app.color) ? app.color : '#6b769a';
+    const btn = document.createElement('button');
+    btn.className = 'watch-cell' + (entry.installed ? '' : ' dim');
+    btn.style.width = diameter + 'px';
+    btn.style.height = diameter + 'px';
+    btn.style.left = cx + 'px';
+    btn.style.top = cy + 'px';
+    btn.style.fontSize = Math.round(diameter * 0.46) + 'px';
+    btn.style.background = 'linear-gradient(155deg,' + bg + ',' + shade(bg, -34) + ')';
+    btn.title = app.name + (entry.installed ? '' : '（未インストール）');
+    btn.innerHTML = '<span class="wc-ic">' + escapeHtml(app.icon || '▣') + '</span>' +
+      (entry.installed ? '' : '<span class="wc-badge">+</span>');
+    btn.addEventListener('click', function(){ watchCellAction(entry, root); });
+    grid.appendChild(btn);
+  });
+
+  // pointer-follow "lens": nearby icons swell the closer the pointer gets,
+  // echoing how apps enlarge as the Digital Crown scrolls them toward centre
+  grid.onpointermove = function(e){
+    const rect = grid.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    qsa('.watch-cell', grid).forEach(function(cell){
+      const ccx = cell.offsetLeft + cell.offsetWidth / 2, ccy = cell.offsetTop + cell.offsetHeight / 2;
+      const d = Math.hypot(mx - ccx, my - ccy);
+      const boost = Math.max(0, 1 - d / (rect.width * 0.2));
+      cell.style.transform = boost > 0.02 ? 'scale(' + (1 + boost * 0.55) + ')' : '';
+      cell.style.zIndex = boost > 0.02 ? '5' : '';
+    });
+  };
+  grid.onpointerleave = function(){
+    qsa('.watch-cell', grid).forEach(function(cell){ cell.style.transform = ''; cell.style.zIndex = ''; });
+  };
+}
 async function handleInstallFile(file){
   if(file.size > MAX_APP_BYTES){ showToast({ title:'ファイルが大きすぎます', body:fmtBytes(file.size), type:'error' }); return; }
   let text = '';
@@ -3303,6 +3866,446 @@ $('fi-install').addEventListener('change', function(e){
   e.target.value = '';
   if(f) handleInstallFile(f);
 });
+</script>
+<style>
+/* ---------------- widgets ---------------- */
+#widget-layer{ position:absolute; inset:0; pointer-events:none; }
+#widget-layer .widget-inst{ position:absolute; pointer-events:auto; }
+.widget-inst{
+  background:color-mix(in srgb, var(--void-1) 88%, transparent);
+  border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-2);
+  backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.widget-inst.size-small{ width:150px; height:130px; }
+.widget-inst.size-medium{ width:230px; height:190px; }
+.widget-inst.size-large{ width:340px; height:270px; }
+#widget-panel .widget-inst{ position:relative; width:100% !important; margin-bottom:12px; }
+#widget-panel .widget-inst.size-small{ height:110px; }
+#widget-panel .widget-inst.size-medium{ height:170px; }
+#widget-panel .widget-inst.size-large{ height:250px; }
+.widget-head{ display:flex; align-items:center; gap:7px; padding:9px 10px; border-bottom:1px solid var(--line); cursor:grab; touch-action:none; flex-shrink:0; }
+#widget-panel .widget-head{ cursor:default; }
+.widget-ico{ font-size:14px; flex-shrink:0; }
+.widget-name{ font-size:11.5px; font-weight:600; color:var(--ink-0); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.widget-acts{ display:flex; gap:2px; flex-shrink:0; }
+.widget-act{ background:none; border:none; color:var(--ink-2); font-size:11px; width:20px; height:20px; border-radius:6px; cursor:pointer; }
+.widget-act:hover{ background:var(--void-2); color:var(--ink-0); }
+.widget-body{ flex:1; overflow:hidden; position:relative; padding:10px; }
+.widget-frame{ width:100%; height:100%; border:0; background:transparent; }
+.widget-empty{ font-size:11px; color:var(--ink-2); text-align:center; padding:16px 6px; }
+
+#widget-panel{
+  position:fixed; top:0; right:0; bottom:var(--taskbar-h); width:min(320px,88vw); z-index:8700;
+  background:color-mix(in srgb, var(--void-1) 92%, transparent);
+  backdrop-filter:blur(30px) saturate(1.5); -webkit-backdrop-filter:blur(30px) saturate(1.5);
+  border-left:1px solid var(--line-hot); box-shadow:var(--sh-3);
+  transform:translateX(100%); transition:transform var(--t-med) var(--ease);
+  display:flex; flex-direction:column; padding-top:var(--safe-t);
+}
+#widget-panel.open{ transform:translateX(0); }
+#widget-panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; font-size:14px; font-weight:700; color:var(--ink-0); border-bottom:1px solid var(--line); flex-shrink:0; }
+#widget-panel-acts{ display:flex; gap:6px; }
+#widget-panel-acts button{ width:28px; height:28px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--void-2); color:var(--ink-1); cursor:pointer; font-size:14px; }
+#widget-panel-acts button:hover{ color:var(--ink-0); background:var(--void-3); }
+#widget-panel-body{ flex:1; overflow-y:auto; padding:14px; }
+.widget-empty-panel{ text-align:center; color:var(--ink-2); font-size:12px; padding:40px 12px; line-height:2; }
+
+.widget-gallery{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; margin:6px 0 4px; max-height:52vh; overflow-y:auto; }
+.widget-gcard{ background:var(--void-2); border:1px solid var(--line); border-radius:var(--r-md); padding:12px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; text-align:center; transition:background var(--t-fast), border-color var(--t-fast); }
+.widget-gcard:hover{ background:var(--void-3); border-color:var(--line-hot); }
+.widget-gicon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.widget-gname{ font-size:11px; font-weight:600; color:var(--ink-0); }
+.widget-gsizes{ font-size:9.5px; color:var(--ink-2); }
+
+/* built-in widget content */
+.w-clock-time{ font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--ink-0); letter-spacing:.02em; }
+.w-clock-date{ font-size:10.5px; color:var(--ink-2); margin-top:4px; }
+.w-cal-head{ font-size:11px; font-weight:700; color:var(--ink-0); margin-bottom:6px; }
+.w-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; font-size:9.5px; text-align:center; color:var(--ink-1); }
+.w-cal-dow{ color:var(--ink-2); font-weight:700; }
+.w-cal-today{ background:var(--signal); color:#05060b; border-radius:50%; font-weight:700; }
+.w-sysmon-pct{ font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--signal); }
+.w-sysmon-pct small{ font-size:13px; }
+.w-sysmon-label{ font-size:10px; color:var(--ink-2); margin:2px 0 6px; }
+.w-sysmon-graph{ display:flex; align-items:flex-end; gap:1px; height:44px; }
+.w-sysmon-graph i{ flex:1; background:var(--signal); opacity:.7; border-radius:1px 1px 0 0; min-height:2px; }
+.w-storage-pct{ font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--ink-0); }
+.w-storage-bar{ height:6px; border-radius:var(--r-full); background:var(--void-4); overflow:hidden; margin:8px 0 6px; }
+.w-storage-bar i{ display:block; height:100%; background:var(--signal); }
+.w-storage-sub{ font-size:9.5px; color:var(--ink-2); font-family:var(--font-mono); }
+.w-note-area{ width:100%; height:100%; resize:none; border:none; background:none; color:var(--ink-0); font-size:11.5px; line-height:1.6; outline:none; font-family:inherit; }
+.w-shortcuts-grid{ display:grid; grid-template-columns:repeat(auto-fill,54px); gap:8px; justify-content:center; }
+.w-shortcut-btn{ display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; cursor:pointer; padding:2px; }
+.w-shortcut-btn .glyph{ width:36px; height:36px; font-size:17px; border-radius:11px; }
+.w-shortcut-btn span{ font-size:9px; color:var(--ink-1); max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.w-uptime-val{ font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--ink-0); }
+.w-uptime-label{ font-size:9.5px; color:var(--ink-2); margin-top:4px; }
+.w-weather-icon{ font-size:30px; line-height:1; }
+.w-weather-temp{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--ink-0); margin-top:4px; }
+.w-weather-label{ font-size:10.5px; color:var(--ink-1); margin-top:2px; }
+.w-weather-note{ font-size:8.5px; color:var(--ink-2); margin-top:6px; }
+</style>
+<script>
+'use strict';
+/* ---------------- widgets ----------------
+   A widget is either one of the 8 built-in mini-views below, rendered
+   straight into the DOM like a system app, or any installed app that
+   declares a "widget" block in its manifest -- that app's own
+   main.html is booted a second time (same sandboxed iframe, same N5
+   SDK) at a smaller size with PLATFORM.surface === "widget", so a
+   third-party developer can make their app widget-capable without any
+   new file format or separate SDK. Placement is either "panel" (a
+   dedicated slide-in drawer) or "freeform" (positioned directly on
+   the desktop), chosen in Settings and shared across screens the same
+   way installed apps are. */
+const BUILTIN_WIDGETS = [
+  { id:'sys.clock',     name:'時計',             icon:'🕐', color:'#22d3ee', sizes:['small','medium'] },
+  { id:'sys.calendar',  name:'カレンダー',        icon:'🗓', color:'#f0468c', sizes:['medium','large'] },
+  { id:'sys.sysmon',    name:'システムモニター',  icon:'📈', color:'#3ddc97', sizes:['small','medium','large'] },
+  { id:'sys.storage',   name:'ストレージ',        icon:'🗄', color:'#ffb547', sizes:['small','medium'] },
+  { id:'sys.quicknote', name:'クイックメモ',      icon:'📝', color:'#8b5cf6', sizes:['medium','large'] },
+  { id:'sys.shortcuts', name:'ショートカット',    icon:'🚀', color:'#22d3ee', sizes:['medium','large'] },
+  { id:'sys.uptime',    name:'稼働時間',          icon:'⏱', color:'#a8b3d4', sizes:['small'] },
+  { id:'sys.weather',   name:'天気（シミュレーション）', icon:'⛅', color:'#3fa0c9', sizes:['small','medium'] }
+];
+const WIDGET_RENDER = {};
+WIDGET_RENDER['sys.clock'] = function(el, size){
+  function draw(){
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0'), ss = String(now.getSeconds()).padStart(2, '0');
+    el.innerHTML = '<div class="w-clock-time">' + hh + ':' + mm + (size === 'small' ? '' : ':' + ss) + '</div>' +
+      '<div class="w-clock-date">' + escapeHtml(now.toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' })) + '</div>';
+  }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.calendar'] = function(el){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  let html = '<div class="w-cal-head">' + (m + 1) + '月 ' + y + '</div><div class="w-cal-grid">';
+  ['日', '月', '火', '水', '木', '金', '土'].forEach(function(d){ html += '<span class="w-cal-dow">' + d + '</span>'; });
+  for(let i = 0; i < first; i++) html += '<span></span>';
+  for(let d = 1; d <= days; d++) html += '<span class="' + (d === today ? 'w-cal-today' : '') + '">' + d + '</span>';
+  html += '</div>';
+  el.innerHTML = html;
+  return null;
+};
+WIDGET_RENDER['sys.sysmon'] = function(el, size){
+  function draw(){
+    const pct = TaskMgr.loadPct();
+    el.innerHTML = '<div class="w-sysmon-pct">' + pct + '<small>%</small></div><div class="w-sysmon-label">応答性負荷</div>' +
+      (size === 'small' ? '' : TaskMgr.graph(TaskMgr.lagHist, 200, 'w-sysmon-graph'));
+  }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.storage'] = function(el){
+  function draw(){
+    const used = VFS.totalBytes();
+    const cap = NVRAM.get().memory.sizeMB * 1024 * 1024;
+    const pct = clamp(Math.round(used / cap * 100), 0, 100);
+    el.innerHTML = '<div class="w-storage-pct">' + pct + '%</div><div class="w-storage-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="w-storage-sub">' + fmtBytes(used) + ' / ' + fmtBytes(cap) + '</div>';
+  }
+  draw();
+  const t = setInterval(draw, 4000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.quicknote'] = function(el){
+  const dir = '/Users/default/AppData/_widgets', path = dir + '/quicknote.txt';
+  el.innerHTML = '<textarea class="w-note-area" placeholder="メモ…"></textarea>';
+  const ta = el.querySelector('.w-note-area');
+  try{ ta.value = VFS.exists(path) ? VFS.read(path) : ''; }catch(e){}
+  let timer = null;
+  ta.addEventListener('input', function(){
+    clearTimeout(timer);
+    timer = setTimeout(async function(){
+      try{ if(!VFS.exists(dir)) await VFS.mkdir(dir, true); }catch(e){}
+      try{ await VFS.write(path, ta.value); }catch(e){}
+    }, 500);
+  });
+  return function(){ clearTimeout(timer); };
+};
+WIDGET_RENDER['sys.shortcuts'] = function(el, size){
+  const n = size === 'large' ? 8 : 6;
+  const apps = Registry.listAll().slice(0, n);
+  if(!apps.length){ el.innerHTML = '<div class="widget-empty">アプリがありません</div>'; return null; }
+  el.innerHTML = '<div class="w-shortcuts-grid"></div>';
+  const g = el.querySelector('.w-shortcuts-grid');
+  apps.forEach(function(a){
+    const b = document.createElement('button');
+    b.className = 'w-shortcut-btn';
+    b.title = a.name;
+    b.innerHTML = glyphHTML(a) + '<span></span>';
+    b.querySelector('span').textContent = a.name;
+    b.addEventListener('click', function(){ launchApp(a.id); });
+    g.appendChild(b);
+  });
+  return null;
+};
+const WIDGET_BOOT_AT = Date.now();
+WIDGET_RENDER['sys.uptime'] = function(el){
+  function fmt(ms){
+    let s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600); s -= h * 3600;
+    const m = Math.floor(s / 60); s -= m * 60;
+    return (h ? h + '時間' : '') + m + '分' + s + '秒';
+  }
+  function draw(){ el.innerHTML = '<div class="w-uptime-val">' + fmt(Date.now() - WIDGET_BOOT_AT) + '</div><div class="w-uptime-label">このセッションの稼働時間</div>'; }
+  draw();
+  const t = setInterval(draw, 1000);
+  return function(){ clearInterval(t); };
+};
+WIDGET_RENDER['sys.weather'] = function(el){
+  /* No network access, so this is honestly labeled simulated data rather
+     than pretending to be a live feed -- same principle as TaskMgr's
+     measured-not-invented numbers, just the other direction: an app
+     that truly can't measure the weather says so instead of faking it. */
+  const conditions = [
+    { icon:'☀️', label:'晴れ' }, { icon:'☁️', label:'くもり' }, { icon:'🌧', label:'小雨' },
+    { icon:'⛅', label:'晴れときどきくもり' }, { icon:'🌤', label:'くもりのち晴れ' }
+  ];
+  const seed = new Date().toISOString().slice(0, 10).split('-').reduce(function(a, c){ return a + parseInt(c, 10); }, 0);
+  const c = conditions[seed % conditions.length];
+  const temp = 14 + (seed % 15);
+  el.innerHTML = '<div class="w-weather-icon">' + c.icon + '</div><div class="w-weather-temp">' + temp + '℃</div>' +
+    '<div class="w-weather-label">' + escapeHtml(c.label) + '</div><div class="w-weather-note">※ シミュレーション（オフライン）</div>';
+  return null;
+};
+
+const Widgets = (function(){
+  const KEY = '/System/widgets.json';
+  let list = [];
+  const frameOwners = new Map();
+
+  function builtinDef(id){ return BUILTIN_WIDGETS.find(function(b){ return b.id === id; }) || null; }
+  function appDef(appId){
+    const m = Registry.get(appId);
+    if(!m || !m.widget) return null;
+    return { id:'app:' + appId, appId:appId, name:m.name, icon:m.icon, color:m.color, sizes:m.widget.sizes.length ? m.widget.sizes : ['small', 'medium'] };
+  }
+  function defOf(ref){ return String(ref || '').indexOf('app:') === 0 ? appDef(ref.slice(4)) : builtinDef(ref); }
+  function catalog(){
+    const appWidgets = Registry.listAll().map(function(a){ return a.widget ? appDef(a.id) : null; }).filter(Boolean);
+    return BUILTIN_WIDGETS.concat(appWidgets);
+  }
+
+  async function load(){
+    const raw = VFS.exists(KEY) ? VFS.readJSON(KEY, []) : [];
+    list = (Array.isArray(raw) ? raw : []).filter(function(i){ return i && i.instId && i.ref && defOf(i.ref); });
+  }
+  async function save(){ await VFS.writeJSON(KEY, list); MultiScreen.broadcast('widgets-changed'); }
+  function all(){ return list.slice(); }
+  function get(instId){ return list.find(function(i){ return i.instId === instId; }) || null; }
+  async function add(ref, size){
+    const def = defOf(ref);
+    if(!def) return null;
+    const n = list.length;
+    const inst = {
+      instId: 'w-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      ref: ref, size: (def.sizes.indexOf(size) !== -1 ? size : def.sizes[0]),
+      x: 24 + (n % 6) * 26, y: 24 + (n % 6) * 22, order: n
+    };
+    list.push(inst);
+    await save();
+    return inst;
+  }
+  async function remove(instId){
+    const i = list.findIndex(function(x){ return x.instId === instId; });
+    if(i === -1) return false;
+    list.splice(i, 1);
+    await save();
+    return true;
+  }
+  async function setPos(instId, x, y){ const inst = get(instId); if(!inst) return; inst.x = x; inst.y = y; await save(); }
+  async function setSize(instId, size){ const inst = get(instId); if(!inst) return; inst.size = size; await save(); }
+
+  function registerFrame(win, appId){ frameOwners.set(win, appId); }
+  function unregisterFrame(win){ frameOwners.delete(win); }
+  function ownerOf(win){ return frameOwners.get(win) || null; }
+
+  return {
+    load, save, all, get, add, remove, setPos, setSize,
+    catalog, defOf, builtinDef, appDef, registerFrame, unregisterFrame, ownerOf
+  };
+})();
+
+const _widgetMounted = new Map();
+let _widgetDrag = null;
+function mountWidgetInstance(container, inst, freeform){
+  const def = Widgets.defOf(inst.ref);
+  const el = document.createElement('div');
+  el.className = 'widget-inst size-' + (def ? inst.size : 'small');
+  el.dataset.inst = inst.instId;
+  if(freeform){ el.style.left = (inst.x || 24) + 'px'; el.style.top = (inst.y || 24) + 'px'; }
+  if(!def){ el.innerHTML = '<div class="widget-empty">見つかりません</div>'; container.appendChild(el); return el; }
+  el.innerHTML =
+    '<div class="widget-head"><span class="widget-ico"></span><span class="widget-name"></span>' +
+      '<div class="widget-acts">' +
+        (def.sizes.length > 1 ? '<button class="widget-act" data-act="size" title="サイズ変更">⤢</button>' : '') +
+        '<button class="widget-act" data-act="remove" title="削除">✕</button>' +
+      '</div></div>' +
+    '<div class="widget-body"></div>';
+  el.querySelector('.widget-ico').textContent = def.icon || '▣';
+  el.querySelector('.widget-name').textContent = def.name;
+  container.appendChild(el);
+  const destroy = renderWidgetContent(el.querySelector('.widget-body'), inst, def);
+  if(destroy) _widgetMounted.set(inst.instId, destroy);
+  const rm = el.querySelector('[data-act="remove"]');
+  if(rm) rm.addEventListener('click', function(e){
+    e.stopPropagation();
+    confirmDialog({ title:'ウィジェットを削除', body:escapeHtml(def.name) + ' をこの画面から削除します。', okLabel:'削除', danger:true }).then(function(ok){
+      if(ok) Widgets.remove(inst.instId).then(refreshWidgetSurface);
+    });
+  });
+  const sz = el.querySelector('[data-act="size"]');
+  if(sz) sz.addEventListener('click', function(e){
+    e.stopPropagation();
+    const i = def.sizes.indexOf(inst.size);
+    Widgets.setSize(inst.instId, def.sizes[(i + 1) % def.sizes.length]).then(refreshWidgetSurface);
+  });
+  if(freeform) bindWidgetDrag(el, inst);
+  return el;
+}
+function renderWidgetContent(body, inst, def){
+  if(def.appId){
+    const meta = Registry.get(def.appId);
+    if(!meta || !VFS.exists(Registry.mainPath(def.appId))){ body.innerHTML = '<div class="widget-empty">利用できません</div>'; return null; }
+    const frame = document.createElement('iframe');
+    frame.className = 'widget-frame';
+    frame.setAttribute('sandbox', NVRAM.get().sandbox.strict ? 'allow-scripts' : 'allow-scripts allow-forms');
+    frame.srcdoc = buildBootstrap(meta, { surface:'widget', size:inst.size }) + (Registry.code(def.appId) || '');
+    body.appendChild(frame);
+    frame.addEventListener('load', function(){ try{ Widgets.registerFrame(frame.contentWindow, def.appId); }catch(e){} });
+    return function(){ try{ Widgets.unregisterFrame(frame.contentWindow); }catch(e){} };
+  }
+  const render = WIDGET_RENDER[def.id];
+  if(!render){ body.innerHTML = '<div class="widget-empty">未対応のウィジェット</div>'; return null; }
+  return render(body, inst.size);
+}
+function bindWidgetDrag(el, inst){
+  const head = el.querySelector('.widget-head');
+  head.addEventListener('pointerdown', function(e){
+    if(e.target.closest('.widget-act')) return;
+    _widgetDrag = { el:el, inst:inst, sx:e.clientX, sy:e.clientY, ox:inst.x || 24, oy:inst.y || 24 };
+    try{ head.setPointerCapture(e.pointerId); }catch(err){}
+  });
+}
+window.addEventListener('pointermove', function(e){
+  if(!_widgetDrag) return;
+  const tbh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')) || 54;
+  const nx = clamp(_widgetDrag.ox + (e.clientX - _widgetDrag.sx), 0, window.innerWidth - 60);
+  const ny = clamp(_widgetDrag.oy + (e.clientY - _widgetDrag.sy), 0, window.innerHeight - tbh - 60);
+  _widgetDrag.el.style.left = nx + 'px';
+  _widgetDrag.el.style.top = ny + 'px';
+  _widgetDrag.nx = nx; _widgetDrag.ny = ny;
+});
+window.addEventListener('pointerup', function(){
+  if(!_widgetDrag) return;
+  const d = _widgetDrag; _widgetDrag = null;
+  if(typeof d.nx === 'number') Widgets.setPos(d.inst.instId, d.nx, d.ny);
+});
+function clearMountedWidgets(){
+  _widgetMounted.forEach(function(fn){ try{ fn(); }catch(e){} });
+  _widgetMounted.clear();
+}
+function renderWidgetLayer(){
+  const layer = $('widget-layer');
+  if(!layer) return;
+  layer.innerHTML = '';
+  Widgets.all().forEach(function(inst){ mountWidgetInstance(layer, inst, true); });
+}
+function renderWidgetPanel(){
+  const body = $('widget-panel-body');
+  if(!body) return;
+  body.innerHTML = '';
+  const items = Widgets.all();
+  if(!items.length){
+    body.innerHTML = '<div class="widget-empty-panel">ウィジェットがありません<br><button class="btn ghost sm" id="wpAddEmpty">追加する</button></div>';
+    const b = qs('#wpAddEmpty', body); if(b) b.addEventListener('click', showWidgetGallery);
+    return;
+  }
+  items.forEach(function(inst){ mountWidgetInstance(body, inst, false); });
+}
+/* Renders only the surface that's actually visible, so a hidden panel
+   or an inactive freeform layer never keeps live intervals running for
+   widgets nobody can see. */
+function applyWidgetLayoutMode(){
+  clearMountedWidgets();
+  const mode = Config.get().widgetLayoutMode === 'freeform' ? 'freeform' : 'panel';
+  const layer = $('widget-layer'), panel = $('widget-panel'), tbBtn = $('tb-widgets');
+  if(mode === 'freeform'){
+    if(tbBtn) tbBtn.classList.add('hidden');
+    if(panel){ panel.classList.remove('open'); panel.classList.add('hidden'); }
+    renderWidgetLayer();
+  } else {
+    if(layer) layer.innerHTML = '';
+    if(tbBtn) tbBtn.classList.remove('hidden');
+    renderWidgetPanel();
+  }
+}
+function refreshWidgetSurface(){ applyWidgetLayoutMode(); }
+function openWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  renderWidgetPanel();
+  if(p.classList.contains('open')) return;
+  p.classList.remove('hidden');
+  requestAnimationFrame(function(){ p.classList.add('open'); });
+}
+function closeWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  p.classList.remove('open');
+  setTimeout(function(){ if(!p.classList.contains('open')) p.classList.add('hidden'); }, 260);
+}
+function toggleWidgetPanel(){
+  const p = $('widget-panel');
+  if(!p) return;
+  if(p.classList.contains('open')) closeWidgetPanel(); else openWidgetPanel();
+}
+function showWidgetGallery(){
+  const items = Widgets.catalog();
+  showModal(
+    '<div class="m-title">ウィジェットを追加</div>' +
+    (items.length
+      ? '<div class="widget-gallery"></div>'
+      : '<div class="m-sub">追加できるウィジェットがありません。ウィジェット対応アプリをインストールしてください。</div>') +
+    '<div class="m-acts"><button class="btn ghost" id="wgClose">閉じる</button></div>',
+    function(c){
+      const gallery = c.querySelector('.widget-gallery');
+      if(gallery){
+        items.forEach(function(def){
+          const card = document.createElement('div');
+          card.className = 'widget-gcard';
+          const color = isHexColor(def.color) ? def.color : '#6b769a';
+          card.innerHTML = '<div class="widget-gicon" style="background:' + color + '22;color:' + color + ';"></div><div class="widget-gname"></div><div class="widget-gsizes"></div>';
+          card.querySelector('.widget-gicon').textContent = def.icon || '▣';
+          card.querySelector('.widget-gname').textContent = def.name;
+          card.querySelector('.widget-gsizes').textContent = def.sizes.join(' / ');
+          card.addEventListener('click', function(){
+            Widgets.add(def.id, def.sizes[0]).then(function(){
+              hideModal();
+              refreshWidgetSurface();
+              if(Config.get().widgetLayoutMode === 'panel') openWidgetPanel();
+              showToast({ title:'ウィジェットを追加しました', body:def.name, icon:def.icon || '▣' });
+            });
+          });
+          gallery.appendChild(card);
+        });
+      }
+      c.querySelector('#wgClose').addEventListener('click', hideModal);
+    }
+  );
+}
+$('tb-widgets').addEventListener('click', toggleWidgetPanel);
+$('wpAddBtn').addEventListener('click', showWidgetGallery);
+$('wpCloseBtn').addEventListener('click', closeWidgetPanel);
 </script>
 <script>
 'use strict';
@@ -3377,6 +4380,14 @@ SYS_RENDER.settings = async function(root, win){
           '<div class="row"><span>ターミナルの起動メッセージ</span><div class="switch" id="tgGreet"></div></div>' +
         '</div>' +
 
+        '<div class="sect">ウィジェット</div>' +
+        '<div class="card">' +
+          '<div class="row"><span>配置</span></div>' +
+          '<div class="seg" id="sgWidgetLayout"><button data-v="panel">専用パネル</button><button data-v="freeform">自由配置</button></div>' +
+          '<div class="hint" style="margin-top:10px;">専用パネル: タスクバーのボタンから開く一覧に表示します。<br>自由配置: デスクトップ上に直接ドラッグして配置します。</div>' +
+          '<div class="row" style="margin-top:12px;"><span>ウィジェットを追加</span><button class="btn ghost sm" id="btAddWidget">追加</button></div>' +
+        '</div>' +
+
         '<div class="sect">システムファイル</div>' +
         '<div class="card">' +
           '<div class="hint" style="margin-bottom:10px;">OSの設定はすべて /System 以下の実ファイルです。直接編集すると即座に反映されます。壊した場合はセーフモードで起動してください。</div>' +
@@ -3431,6 +4442,8 @@ SYS_RENDER.settings = async function(root, win){
     bindSwitch('#tgHidden', c.showHiddenFiles, function(v){ Config.update({ showHiddenFiles:v }).then(refreshFilesViews); });
     bindSwitch('#tgConfirm', c.confirmDelete, function(v){ Config.update({ confirmDelete:v }); });
     bindSwitch('#tgGreet', c.terminalGreeting, function(v){ Config.update({ terminalGreeting:v }); });
+    bindSeg('#sgWidgetLayout', c.widgetLayoutMode, function(v){ Config.update({ widgetLayoutMode:v }).then(function(){ applyWidgetLayoutMode(); draw(); }); });
+    qs('#btAddWidget', root).addEventListener('click', showWidgetGallery);
 
     const accents = ['#22d3ee','#f0468c','#3ddc97','#ffb547','#8b5cf6','#ef4444','#a8b3d4'];
     qs('#swAccent', root).innerHTML = accents.map(function(a){
@@ -4342,10 +5355,16 @@ $('tb-term').addEventListener('click', function(){ launchApp('terminal'); });
 $('tb-settings').addEventListener('click', function(){ launchApp('settings'); });
 
 /* ---------------- desktop interactions ---------------- */
+async function openSecondScreenFlow(){
+  const result = await MultiScreen.openSecondScreen();
+  if(result === 'placed') showToast({ title:'新しい画面を開きました', body:'2台目のディスプレイに配置しました', icon:'🖥' });
+  else if(result === 'opened') showToast({ title:'新しい画面を開きました', body:'ウィンドウを2台目のモニターへドラッグしてください', icon:'🖥' });
+  else showToast({ title:'開けませんでした', body:'ポップアップがブロックされている可能性があります', type:'error' });
+}
 $('desk').addEventListener('contextmenu', function(e){
   if(e.target.closest('.tile')) return;
   e.preventDefault();
-  showContextMenu(e.clientX, e.clientY, [
+  const items = [
     { icon:'🗂', label:'ファイルを開く', onSelect:function(){ launchApp('files'); } },
     { icon:'▶', label:'ターミナル', onSelect:function(){ launchApp('terminal'); } },
     { sep:true },
@@ -4361,7 +5380,19 @@ $('desk').addEventListener('contextmenu', function(e){
       } },
     { icon:'⚙', label:'設定', onSelect:function(){ launchApp('settings'); } },
     { icon:'⚡', label:'UEFI Setup を開く', onSelect:function(){ openSetupFromOS(); } }
-  ]);
+  ];
+  if(!Boot.isSafe()){
+    items.push({ sep:true });
+    items.push({ icon:'▦', label:'ウィジェットを追加', onSelect:showWidgetGallery });
+    if(Config.get().widgetLayoutMode === 'panel'){
+      items.push({ icon:'▤', label:'ウィジェットパネルを開く', onSelect:toggleWidgetPanel });
+    }
+  }
+  if(!MultiScreen.isSecondary && !Boot.isSafe() && Config.resolveMode() === 'desktop'){
+    items.push({ sep:true });
+    items.push({ icon:'🖥', label:'新しい画面を開く（マルチモニター）', onSelect:openSecondScreenFlow });
+  }
+  showContextMenu(e.clientX, e.clientY, items);
 });
 (function(){
   const dl = $('desk-layer');
@@ -4389,7 +5420,7 @@ document.addEventListener('keydown', function(e){
   const mod = e.metaKey || e.ctrlKey;
   if(mod && (e.key === 'w' || e.key === 'W')){
     const f = WM.focused();
-    if(f){ e.preventDefault(); WM.close(f.id); }
+    if(f && f.desktopId === Desktops.active()){ e.preventDefault(); WM.close(f.id); }
   }
   if(mod && e.shiftKey && (e.key === 'e' || e.key === 'E')){ e.preventDefault(); launchApp('files'); }
   if(mod && e.shiftKey && (e.key === 't' || e.key === 'T')){ e.preventDefault(); launchApp('terminal'); }
@@ -4398,6 +5429,16 @@ document.addEventListener('keydown', function(e){
      stuck". Escape alone is taken by dialogs, so the combo is checked
      before the plain-Escape handling above can swallow it. */
   if(mod && e.shiftKey && e.key === 'Escape'){ e.preventDefault(); launchApp('taskmgr'); }
+  /* Ctrl/Cmd+Alt+arrow switches virtual desktops (checked first so the Alt
+     modifier doesn't fall through to the plain split-view shortcuts below).
+     Split-view keyboard shortcuts: Ctrl/Cmd+arrow snaps the focused window
+     to a half of the screen (or maximizes on ↑), same geometry the drag
+     ghost previews. */
+  if(mod && e.altKey && e.key === 'ArrowLeft'){ e.preventDefault(); Desktops.switchByOffset(-1); }
+  else if(mod && e.altKey && e.key === 'ArrowRight'){ e.preventDefault(); Desktops.switchByOffset(1); }
+  else if(mod && e.key === 'ArrowLeft'){ if(WM.snapFocused('left')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowRight'){ if(WM.snapFocused('right')) e.preventDefault(); }
+  else if(mod && e.key === 'ArrowUp'){ if(WM.snapFocused('max')) e.preventDefault(); }
 });
 
 window.addEventListener('resize', debounce(function(){
@@ -4441,6 +5482,9 @@ async function bootOS(){
     const reg = await Registry.load();
     if(reg.pruned.length) await bootLog('pruned ' + reg.pruned.length + ' orphaned registry entr' + (reg.pruned.length === 1 ? 'y' : 'ies'), 'warn');
     await bootLog('registry ready — ' + reg.count + ' user app(s)', 'ok');
+    await Desktops.load();
+    await bootLog('desktops ready — ' + Desktops.all().length + ' space(s)', 'ok');
+    await Widgets.load();
     const nv = NVRAM.get();
     await bootLog('resources: ' + nv.memory.sizeMB + 'MB / ' + nv.cpu.cores + ' cores / secureboot ' + (nv.secureBoot.enabled ? 'on' : 'off'), 'ok');
     await bootLog('window manager online', 'ok');
@@ -4469,12 +5513,34 @@ function finish(){
   $('shell').classList.add('on');
   renderDesktop();
   WM.renderTasks();
+  renderDesktopSwitcher();
+  applyWidgetLayoutMode();
   tickClock();
   if(Boot.isSafe()){
     showToast({ title:'セーフモードで起動しました', body:'サードパーティアプリとカスタムテーマは無効です。修復後、UEFI Setup の Boot Target を戻してください。', icon:'⚠', type:'warn', ttl:9000 });
   }
+  if(MultiScreen.isSecondary) document.title = OS_NAME + ' — 第2画面';
   runAutostart();
 }
+/* Keep every open screen in sync: an app install/uninstall or a config
+   change on one screen re-reads the shared VFS-backed storage and
+   repaints here too, without touching this screen's own open windows or
+   virtual desktops. */
+MultiScreen.onMessage(function(type){
+  if(type === 'apps-changed'){
+    /* VFS caches file nodes in memory after mount(), so a write on another
+       screen doesn't appear here until we re-read the shared store. */
+    VFS.mount().then(Registry.load).then(function(){
+      renderDesktop();
+      if(typeof refreshStore === 'function') refreshStore();
+      applyWidgetLayoutMode();
+    });
+  } else if(type === 'config-changed'){
+    Config.reload().then(applyWidgetLayoutMode);
+  } else if(type === 'widgets-changed'){
+    VFS.mount().then(Widgets.load).then(applyWidgetLayoutMode);
+  }
+});
 /* Autostart is skipped entirely in safe mode -- an app that crashes the
    shell on launch would otherwise make the machine unusable in exactly
    the mode meant to recover it. */
@@ -4499,6 +5565,8 @@ async function recover(safe){
   try{ await Config.load(); Theme.load(); Theme.apply(); }catch(e){}
   try{ await Permissions.load(); }catch(e){}
   try{ await Registry.load(); }catch(e){}
+  try{ await Desktops.load(); }catch(e){}
+  try{ await Widgets.load(); }catch(e){}
   finish();
 }
 $('boot-safe').addEventListener('click', function(){ recover(true); });
